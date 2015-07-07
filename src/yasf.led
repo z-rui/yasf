@@ -1,0 +1,63 @@
+mnu_main = menu(
+  submenu("File", menu(
+    item("In-&memory Database\tCtrl+N", cb_file_new),
+    item("Database &File...\tCtrl+O", cb_file_open),
+    separator(),
+    item("&Attach...", cb_file_attach),
+    item("&Detach...", cb_file_detach),
+    separator(),
+    item("E&xit", cb_default_close)
+  )),
+  submenu("Edit", menu(
+    submenu("&Create", menu(
+      item("&Table...", cb_edit_create_table),
+      item("&Index...", cb_edit_create_index),
+      item("&View...", cb_edit_create_view),
+      item("Tri&gger...", cb_edit_create_trigger)
+    )),
+    item("&Drop...", cb_edit_drop),
+    separator(),
+    submenu("&Transaction", menu(
+      item("&Begin\tCtrl+B", cb_edit_transaction_begin),
+	item("&Commit\tCtrl+M", cb_edit_transaction_commit),
+      item("&Rollback\tCtrl+R", cb_edit_transaction_rollback)
+    )),
+    separator(),
+    submenu("&Import", menu(
+      item("From &SQL...", cb_file_import_sql),
+      item("From CS&V...", cb_file_import_csv)
+    )),
+    item("&Export...", cb_file_export),
+    separator(),
+    item("&Pragmas...", cb_edit_pragmas)
+  )),
+  submenu("Help", menu(
+    item("&About...", cb_help_about)
+  ))
+)
+
+ctl_toolbar = hbox(
+  button("&Open", cb_file_open),
+  button("New &Table", cb_edit_create_table)
+)
+
+dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_main, MAP_CB=cb_main_init] (vbox(
+  ctl_toolbar,
+  split[ORIENTATION="VERTICAL"](
+    ctl_tree = tree[TITLE0="Databases", SIZE="100x"](),
+    split[ORIENTATION="HORIZONTAL"](
+      ctl_matrix = matrix[NAME="MATVIEW", SIZE="300x150", RESIZEMATRIX="YES", EDITFITVALUE="YES", MULTILINE="YES"](cb_matrix),
+      frame[TITLE="SQL"](hbox(
+        ctl_cmdline = scintilla[EXPAND="YES", LEXERLANGUAGE="sql", SIZE="100x50"](),
+        vbox(
+          fill(),
+          button[EXPAND="NO"]("E&xecute", cb_execute)
+        )
+      ))
+    )
+  )
+))
+
+dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
+
+dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.db;*.sqlite|All files (*.*)|*.*"]()
