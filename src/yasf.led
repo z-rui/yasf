@@ -41,6 +41,22 @@ ctl_toolbar = hbox(
   button("New &Table", cb_edit_create_table)
 )
 
+ctl_cmdline = scintilla[
+EXPAND="YES",
+LEXERLANGUAGE="sql",
+SIZE="100x50",
+KEYWORDS0="abort action add after all alter analyze and as asc attach autoincrement before begin between by cascade case cast check collate column commit conflict constraint create cross current_date current_time current_timestamp database default deferrable deferred delete desc detach distinct drop each else end escape except exclusive exists explain fail for foreign from full glob group having if ignore immediate in index indexed initially inner insert instead intersect into is isnull join key left like limit match natural no not notnull null of offset on or order outer plan pragma primary query raise recursive references regexp reindex release rename replace restrict right rollback row savepoint select set table temp temporary then to transaction trigger union unique update using vacuum values view virtual when where with without",
+STYLEFGCOLOR1="0 128 0",
+STYLEFGCOLOR2="0 128 0",
+STYLEFGCOLOR4="255 0 255",
+STYLEFGCOLOR5="0 0 255",
+STYLEBOLD5="YES",
+STYLEFGCOLOR6="160 20 20",
+STYLEFGCOLOR7="128 0 0",
+STYLEFGCOLOR9="0 0 255",
+STYLEFGCOLOR10="0 0 0"
+]()
+
 dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_main, MAP_CB=cb_main_init] (vbox(
   ctl_toolbar,
   split[ORIENTATION="VERTICAL"](
@@ -48,7 +64,7 @@ dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_ma
     split[ORIENTATION="HORIZONTAL"](
       ctl_matrix = matrix[NAME="MATVIEW", SIZE="300x150", RESIZEMATRIX="YES", EDITFITVALUE="YES", MULTILINE="YES"](cb_matrix),
       frame[TITLE="SQL"](hbox(
-        ctl_cmdline = scintilla[EXPAND="YES", LEXERLANGUAGE="sql", SIZE="100x50"](),
+        ctl_cmdline,
         vbox(
           fill(),
           button[EXPAND="NO"]("E&xecute", cb_execute)
