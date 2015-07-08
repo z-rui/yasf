@@ -1,4 +1,5 @@
 #include <iup.h>
+#include <sqlite3.h>
 #include "yasf.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -240,32 +241,10 @@ int cb_table_viewschema(Ihandle *ih)
 
 int cb_table_rename(Ihandle *ih)
 {
-	const char *dbname, *type, *tablename;
-	static char newname[512];
-	int rc;
+	Ihandle *tree;
 
-	get_node_info(&dbname, &type, &tablename);
-	if (strcmp(type, "table") != 0) {
-		IupMessagef("Error", "Cannot rename %s %s", (type[0] == 'i') ? "an" : "a", type);
-		return IUP_DEFAULT;
-	}
-	newname[0] = '\0';
-	rc = IupGetParam("Rename", 0, 0,
-		"New name: %s\n",
-		newname);
-	if (rc) {
-		Ihandle *tree;
-		int id;
-
-		exec_stmt_args("alter table %Q.%Q rename to %Q", dbname, tablename, newname);
-		/* position of the node does not alter after
-		 * an 'alter table' statement, so we make a backup
-		 * before updating treeview, and restore it later. */
-		tree = IupGetHandle("ctl_tree");
-		id = IupGetInt(tree, "VALUE");
-		update_treeview();
-		IupSetInt(tree, "VALUE", id);
-	}
+	tree = IupGetHandle("ctl_tree");
+	IupSetAttribute(tree, "RENAME", "YES");
 	return IUP_DEFAULT;
 }
 
@@ -284,10 +263,32 @@ int cb_table_drop(Ihandle *ih)
 	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
 	assert(rc == 1 || rc == 2);
 	if (rc == 1) {
-		exec_stmt_args("drop table %Q.%Q", dbname, tablename);
+		rc = exec_stmt_args("drop table %Q.%Q", dbname, tablename);
 		update_treeview();
 	}
 	return IUP_DEFAULT;
+}
+
+int cb_tree_showrename(Ihandle *ih, int id)
+{
+	const char *dbname, *type, *tablename;
+
+	get_node_info(&dbname, &type, &tablename);
+	if (tablename == 0 || strcmp(type, "table") != 0) {
+		/* only tables can be renamed */
+		return IUP_IGNORE;
+	}
+	return IUP_DEFAULT;
+}
+
+int cb_tree_rename(Ihandle *ih, int id, char *title)
+{
+	const char *dbname, *type, *tablename;
+	int rc;
+
+	get_node_info(&dbname, &type, &tablename);
+	rc = exec_stmt_args("alter table %Q.%Q rename to %Q", dbname, tablename, title);
+	return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 }
 
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
@@ -308,5 +309,7 @@ void reg_cb(void)
 	REGISTER(cb_table_viewschema);
 	REGISTER(cb_table_rename);
 	REGISTER(cb_table_drop);
+	REGISTER(cb_tree_showrename);
+	REGISTER(cb_tree_rename);
 }
 
