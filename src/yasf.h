@@ -7,7 +7,8 @@ extern int db_attach(const char *, const char *);
 extern int db_detach(const char *);
 extern void db_finalize(void);
 extern int cb_edit_pragmas(Ihandle *);
+extern void update_treeview(void);
 #include <sqlite3.h> /* for sqlite3_stmt */
 extern void exec_stmt(sqlite3_stmt *);
 extern void exec_stmt_str(const char *);
-extern void exec_stmt_db_table(const char *, const char *, const char *);
+extern void exec_stmt_args(const char *stmt, ...);

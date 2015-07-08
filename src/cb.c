@@ -224,7 +224,7 @@ int cb_table_viewdata(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
-	exec_stmt_db_table("select * from %Q.%Q;", dbname, tablename);
+	exec_stmt_args("select * from %Q.%Q;", dbname, tablename);
 	return IUP_DEFAULT;
 }
 
@@ -234,7 +234,29 @@ int cb_table_viewschema(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
-	exec_stmt_db_table("pragma %Q.table_info(%Q);", dbname, tablename);
+	exec_stmt_args("pragma %Q.table_info(%Q);", dbname, tablename);
+	return IUP_DEFAULT;
+}
+
+int cb_table_rename(Ihandle *ih)
+{
+	const char *dbname, *type, *tablename;
+	static char newname[512];
+	int rc;
+
+	get_node_info(&dbname, &type, &tablename);
+	if (strcmp(type, "table") != 0) {
+		IupMessagef("Error", "Cannot rename %s %s", (type[0] == 'i') ? "an" : "a", type);
+		return IUP_DEFAULT;
+	}
+	newname[0] = '\0';
+	rc = IupGetParam("Rename", 0, 0,
+		"New name: %s\n",
+		newname);
+	if (rc) {
+		exec_stmt_args("alter table %Q.%Q rename to %Q", dbname, tablename, newname);
+		update_treeview();
+	}
 	return IUP_DEFAULT;
 }
 
@@ -254,5 +276,6 @@ void reg_cb(void)
 	REGISTER(cb_tree_rightclick);
 	REGISTER(cb_table_viewdata);
 	REGISTER(cb_table_viewschema);
+	REGISTER(cb_table_rename);
 }
 

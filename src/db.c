@@ -217,11 +217,16 @@ void exec_stmt_str(const char *s)
 	}
 }
 
-void exec_stmt_db_table(const char *stmt, const char *dbname, const char *tablename)
+#include <stdarg.h>
+
+void exec_stmt_args(const char *stmt, ...)
 {
 	char *zSql;
+	va_list va;
 
-	zSql = sqlite3_mprintf(stmt, dbname, tablename);
+	va_start(va, stmt);
+	zSql = sqlite3_vmprintf(stmt, va);
+	va_end(va);
 	if (!zSql) return;
 	exec_stmt_str(zSql);
 	sqlite3_free(zSql);
