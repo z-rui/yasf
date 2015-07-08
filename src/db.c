@@ -217,3 +217,12 @@ void exec_stmt_str(const char *s)
 	}
 }
 
+void exec_stmt_db_table(const char *stmt, const char *dbname, const char *tablename)
+{
+	char *zSql;
+
+	zSql = sqlite3_mprintf(stmt, dbname, tablename);
+	if (!zSql) return;
+	exec_stmt_str(zSql);
+	sqlite3_free(zSql);
+}

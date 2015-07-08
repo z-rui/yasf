@@ -10,3 +10,4 @@ extern int cb_edit_pragmas(Ihandle *);
 #include <sqlite3.h> /* for sqlite3_stmt */
 extern void exec_stmt(sqlite3_stmt *);
 extern void exec_stmt_str(const char *);
+extern void exec_stmt_db_table(const char *, const char *, const char *);

@@ -185,6 +185,59 @@ int cb_tree_rightclick(Ihandle *ih, int id)
 	return IUP_DEFAULT;
 }
 
+static
+const char *get_title_at_depth(Ihandle *tree, int id, int at_depth)
+{
+	int depth;
+
+	depth = IupGetIntId(tree, "DEPTH", id);
+	if (depth < at_depth)
+		return 0;
+	while (depth-- > at_depth) {
+		id = IupGetIntId(tree, "PARENT", id);
+	}
+	return IupGetAttributeId(tree, "TITLE", id);
+}
+
+static
+void get_node_info(const char **dbname, const char **type, const char **leafname)
+{
+	int id, depth;
+	Ihandle *tree;
+
+	tree = IupGetHandle("ctl_tree");
+	id = IupGetInt(tree, "VALUE");
+	depth = IupGetIntId(tree, "DEPTH", id);
+	assert(strcmp(IupGetAttributeId(tree, "KIND", id), (depth == 3) ? "LEAF" : "BRANCH") == 0);
+
+	if (leafname)
+		*leafname = get_title_at_depth(tree, id, 3);
+	if (type)
+		*type = get_title_at_depth(tree, id, 2);
+	if (dbname)
+		*dbname = get_title_at_depth(tree, id, 1);
+}
+
+int cb_table_viewdata(Ihandle *ih)
+{
+	const char *dbname, *type, *tablename;
+
+	get_node_info(&dbname, &type, &tablename);
+	assert(strcmp(type, "table") == 0);
+	exec_stmt_db_table("select * from %Q.%Q;", dbname, tablename);
+	return IUP_DEFAULT;
+}
+
+int cb_table_viewschema(Ihandle *ih)
+{
+	const char *dbname, *type, *tablename;
+
+	get_node_info(&dbname, &type, &tablename);
+	assert(strcmp(type, "table") == 0);
+	exec_stmt_db_table("pragma %Q.table_info(%Q);", dbname, tablename);
+	return IUP_DEFAULT;
+}
+
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
 
 void reg_cb(void)
@@ -199,5 +252,7 @@ void reg_cb(void)
 	REGISTER(cb_help_about);
 	REGISTER(cb_default_close);
 	REGISTER(cb_tree_rightclick);
+	REGISTER(cb_table_viewdata);
+	REGISTER(cb_table_viewschema);
 }
 
