@@ -254,8 +254,17 @@ int cb_table_rename(Ihandle *ih)
 		"New name: %s\n",
 		newname);
 	if (rc) {
+		Ihandle *tree;
+		int id;
+
 		exec_stmt_args("alter table %Q.%Q rename to %Q", dbname, tablename, newname);
+		/* position of the node does not alter after
+		 * an 'alter table' statement, so we make a backup
+		 * before updating treeview, and restore it later. */
+		tree = IupGetHandle("ctl_tree");
+		id = IupGetInt(tree, "VALUE");
 		update_treeview();
+		IupSetInt(tree, "VALUE", id);
 	}
 	return IUP_DEFAULT;
 }
