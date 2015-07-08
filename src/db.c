@@ -5,6 +5,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "yasf.h"
+
 struct {
 	sqlite3 *db;
 } glst[1];
@@ -93,14 +95,14 @@ void update_treeview(void)
 	IupSetAttributeId(tree, "INSERTBRANCH", parentid, "temp");
 }
 
-int db_file(const char *filename)
+void db_file(const char *filename)
 {
 	int rc;
 	sqlite3 *db;
 
 	rc = sqlite3_open(filename, &db);
 
-	if (report(rc, 0)) return 0;
+	if (report(rc, 0)) return;
 	
 	if (glst->db) {
 		rc = sqlite3_close(glst->db);
@@ -108,7 +110,6 @@ int db_file(const char *filename)
 	}
 	glst->db = db;
 	update_treeview();
-	return 1;
 }
 
 int db_attach(const char *filename, const char *dbname)
