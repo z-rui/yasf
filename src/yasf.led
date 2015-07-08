@@ -60,7 +60,7 @@ STYLEFGCOLOR10="0 0 0"
 dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_main, MAP_CB=cb_main_init] (vbox(
   ctl_toolbar,
   split[ORIENTATION="VERTICAL"](
-    ctl_tree = tree[TITLE0="Databases", SIZE="100x"](),
+    ctl_tree = tree[TITLE0="Databases", SIZE="100x", RIGHTCLICK_CB=cb_tree_rightclick](),
     split[ORIENTATION="HORIZONTAL"](
       ctl_matrix = matrix[NAME="MATVIEW", SIZE="300x150", RESIZEMATRIX="YES", EDITFITVALUE="YES", MULTILINE="YES"](cb_matrix),
       frame[TITLE="SQL"](hbox(
@@ -77,3 +77,11 @@ dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_ma
 dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
 
 dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.db;*.sqlite|All files (*.*)|*.*"]()
+
+mnu_table_leaf = menu(
+  item("View data", cb_table_viewdata),
+  item("View schema", cb_table_viewschema),
+  separator(),
+  item("Rename", cb_table_rename),
+  item("Drop", cb_table_drop)
+)

@@ -151,6 +151,42 @@ int cb_file_detach(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
+static
+const char *get_leaf_type(Ihandle *tree, int id)
+{
+	int id1;
+
+	id1 = IupGetIntId(tree, "PARENT", id);
+	return IupGetAttributeId(tree, "TITLE", id1);
+}
+
+int cb_tree_rightclick(Ihandle *ih, int id)
+{
+	const char *type;
+	Ihandle *menu;
+
+	IupSetFocus(ih);
+	type = IupGetAttributeId(ih, "KIND", id);
+	fprintf(stderr, "RIGHT CLICK! (%s %d)\n", type, id);
+	IupSetInt(ih, "VALUE", id);
+	if (strcmp(type, "LEAF") == 0) {
+		type = get_leaf_type(ih, id);
+		if (strcmp(type, "table") == 0) {
+			menu = IupGetHandle("mnu_table_leaf");
+			IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
+		} else if (strcmp(type, "index") == 0) {
+			// TODO
+		} else if (strcmp(type, "view") == 0) {
+		} else if (strcmp(type, "trigger") == 0) {
+		} else {
+			assert(0 && "unknown node type");
+		}
+	} else {
+		// TODO handle branches
+	}
+	return IUP_DEFAULT;
+}
+
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
 
 void reg_cb(void)
@@ -164,5 +200,6 @@ void reg_cb(void)
 	REGISTER(cb_execute);
 	REGISTER(cb_help_about);
 	REGISTER(cb_default_close);
+	REGISTER(cb_tree_rightclick);
 }
 
