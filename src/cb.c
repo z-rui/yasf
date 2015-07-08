@@ -36,7 +36,7 @@ int cb_help_about(Ihandle *ih)
 
 	dlg = IupGetHandle("dlg_about");
 	IupSetAttribute(dlg, "VALUE", about_text);
-	IupPopup(dlg, IUP_DEFAULT, IUP_DEFAULT);
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
 	return IUP_DEFAULT;
 }
 
@@ -53,7 +53,7 @@ char *get_file(void)
 
 	dlg = IupGetHandle("dlg_open");
 	IupSetAttribute(dlg, "VALUE", 0);
-	IupPopup(dlg, IUP_DEFAULT, IUP_DEFAULT);
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
 	rc = IupGetInt(dlg, "STATUS");
 	if (rc == 0 || rc == 1) {
 		return IupGetAttribute(dlg, "VALUE");
