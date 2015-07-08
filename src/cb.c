@@ -269,6 +269,27 @@ int cb_table_rename(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
+int cb_table_drop(Ihandle *ih)
+{
+	int rc;
+	static char buf[512];
+	const char *dbname, *type, *tablename;
+
+	get_node_info(&dbname, &type, &tablename);
+	assert(strcmp(type, "table") == 0);
+
+	if (strlen(tablename) > 400)
+		return IUP_DEFAULT; /* too long table name may overflow buffer */
+	sprintf(buf, "Drop table '%s'?", tablename);
+	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
+	assert(rc == 1 || rc == 2);
+	if (rc == 1) {
+		exec_stmt_args("drop table %Q.%Q", dbname, tablename);
+		update_treeview();
+	}
+	return IUP_DEFAULT;
+}
+
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
 
 void reg_cb(void)
@@ -286,5 +307,6 @@ void reg_cb(void)
 	REGISTER(cb_table_viewdata);
 	REGISTER(cb_table_viewschema);
 	REGISTER(cb_table_rename);
+	REGISTER(cb_table_drop);
 }
 
