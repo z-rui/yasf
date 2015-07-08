@@ -146,7 +146,7 @@ void db_finalize(void)
 
 #include "pragmas.c"
 
-void exec_stmt(sqlite3_stmt *stmt)
+int exec_stmt(sqlite3_stmt *stmt)
 {
 	int rc;
 	Ihandle *matrix;
@@ -191,9 +191,10 @@ void exec_stmt(sqlite3_stmt *stmt)
 		fprintf(stderr, "ERROR!\n"); // XXX
 		report(rc, 0);
 	}
+	return rc;
 }
 
-void exec_stmt_str(const char *s)
+int exec_stmt_str(const char *s)
 {
 	int rc = SQLITE_OK;
 	sqlite3_stmt *stmt;
@@ -215,19 +216,22 @@ void exec_stmt_str(const char *s)
 		}
 		s = tail;
 	}
+	return rc;
 }
 
 #include <stdarg.h>
 
-void exec_stmt_args(const char *stmt, ...)
+int exec_stmt_args(const char *stmt, ...)
 {
 	char *zSql;
 	va_list va;
+	int rc;
 
 	va_start(va, stmt);
 	zSql = sqlite3_vmprintf(stmt, va);
 	va_end(va);
-	if (!zSql) return;
-	exec_stmt_str(zSql);
+	if (!zSql) return SQLITE_NOMEM;
+	rc = exec_stmt_str(zSql);
 	sqlite3_free(zSql);
+	return rc;
 }
