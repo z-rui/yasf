@@ -9,8 +9,6 @@ int cb_file_new(Ihandle *ih);
 
 int cb_main_init(Ihandle *ih)
 {
-	Ihandle *cmdline;
-
 	// initialization work
 	cb_file_new(ih);
 
