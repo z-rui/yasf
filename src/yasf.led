@@ -79,9 +79,9 @@ dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
 dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.db;*.sqlite|All files (*.*)|*.*"]()
 
 mnu_table_leaf = menu(
-  item("View data", cb_table_viewdata),
+  item("View data\tEnter", cb_table_viewdata),
   item("View schema", cb_table_viewschema),
   separator(),
-  item("Rename", cb_table_rename),
-  item("Drop", cb_table_drop)
+  item("Rename\tF2", cb_table_rename),
+  item("Drop\tDel", cb_table_drop)
 )
