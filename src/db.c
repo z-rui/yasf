@@ -287,8 +287,36 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 	if (mode == 1) { /* enter */
 		return (glst->editing) ? IUP_CONTINUE : IUP_IGNORE;
 	} else if (update) { /* leave */
-		IupMessage("Sorry...", "Modifying data is not implemented.");
-		return IUP_IGNORE;
+		Ihandle *ih;
+		const char *colname, *newvalue;
+		const char *pkcol, *pkval;
+		int rc;
+
+		assert(glst->name && glst->type && strcmp(glst->type, "table") == 0);
+		ih = IupGetHandle("ctl_matrix");
+		colname = IupGetAttributeId2(ih, "", 0, col);
+		newvalue = IupGetAttribute(ih, "VALUE");
+		pkcol = (glst->pk) ? IupGetAttributeId2(ih, "", 0, glst->pk) : "rowid";
+		pkval = IupGetAttributeId2(ih, "", lin, glst->pk);
+		/* XXX pkval might be a huge blob or long string (if table is
+		 * without rowid and use blob/string as the primary key).
+		 * Normally nobody would do this. */
+		/* XXX Values might be a huge blob or long string.
+		 * This is very common, so it's better to use sqlite3_bind_*
+		 * rather than string-based method. */
+		rc = exec_stmt_args(ih, "update %Q.%Q set %Q = %Q where \"%w\" = %Q;",
+			glst->dbname,
+			glst->name,
+			colname,
+			newvalue,
+			pkcol,
+			pkval
+		);
+		if (rc == SQLITE_OK) {
+			return IUP_DEFAULT;
+		} else {
+			return IUP_IGNORE;
+		}
 	}
 	return IUP_CONTINUE;
 }
