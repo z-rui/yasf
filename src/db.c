@@ -70,13 +70,10 @@ int add_detail(Ihandle *tree, int id, const char *dbname)
 	return id;
 }
 
-void update_treeview(void)
+void update_treeview(Ihandle *tree)
 {
 	int rc, id, parentid;
-	Ihandle *tree;
 	sqlite3_stmt *stmt;
-
-	tree = IupGetHandle("ctl_tree");
 
 	/* first, clear all nodes in the tree ... */
 	IupSetAttribute(tree, "DELNODE0", "CHILDREN");
@@ -118,7 +115,6 @@ void db_file(const char *filename)
 		report(rc, 1);
 	}
 	glst->db = db;
-	update_treeview();
 }
 
 void db_finalize(void)
@@ -131,19 +127,19 @@ void db_finalize(void)
 
 #include "pragmas.c"
 
-int exec_stmt(sqlite3_stmt *stmt)
+int exec_stmt(Ihandle *matrix, sqlite3_stmt *stmt)
 {
 	int rc;
-	Ihandle *matrix;
 	int rows = 0, cols = 0;
 	int i;
 	int implicit_rowid;
 
 	implicit_rowid = !glst->pk;
-	matrix = IupGetHandle("ctl_matrix");
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
 		const char *s;
 
+		if (!matrix)	/* no output */
+			continue;
 		if (rows == 0) {
 			IupSetAttribute(matrix, "CLEARVALUE", "ALL");
 			IupSetInt(matrix, "NUMLIN", 0);
@@ -184,7 +180,7 @@ int exec_stmt(sqlite3_stmt *stmt)
 	return rc;
 }
 
-int exec_stmt_str(const char *s)
+int exec_stmt_str(Ihandle *matrix, const char *s)
 {
 	int rc = SQLITE_OK;
 	sqlite3_stmt *stmt;
@@ -201,7 +197,7 @@ int exec_stmt_str(const char *s)
 		);
 		if (report(rc, 0)) continue;
 		if (stmt) {
-			exec_stmt(stmt);
+			exec_stmt(matrix, stmt);
 			sqlite3_finalize(stmt);
 		}
 		s = tail;
@@ -211,7 +207,7 @@ int exec_stmt_str(const char *s)
 
 #include <stdarg.h>
 
-int exec_stmt_args(const char *stmt, ...)
+int exec_stmt_args(Ihandle *matrix, const char *stmt, ...)
 {
 	char *zSql;
 	va_list va;
@@ -221,7 +217,7 @@ int exec_stmt_args(const char *stmt, ...)
 	zSql = sqlite3_vmprintf(stmt, va);
 	va_end(va);
 	if (!zSql) return SQLITE_NOMEM;
-	rc = exec_stmt_str(zSql);
+	rc = exec_stmt_str(matrix, zSql);
 	sqlite3_free(zSql);
 	return rc;
 }
@@ -264,7 +260,8 @@ void db_enable_edit(const char *dbname, const char *type, const char *name)
 	if (strcmp(type, "table") == 0) {
 		assert(name);
 		glst->pk = get_pk_cid(dbname, name);
-		exec_stmt_args((glst->pk)
+		exec_stmt_args(IupGetHandle("ctl_matrix"),
+			(glst->pk)
 				? "select * from %Q.%Q;"
 				: "select rowid, * from %Q.%Q",
 			dbname,

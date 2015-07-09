@@ -6,10 +6,10 @@ extern void db_file(const char *);
 extern void db_finalize(void);
 extern int cb_edit_pragmas(Ihandle *);
 extern int cb_matrix_edit(Ihandle *, int, int, int, int);
-extern void update_treeview(void);
+extern void update_treeview(Ihandle *);
 #include <sqlite3.h> /* for sqlite3_stmt */
-extern int exec_stmt(sqlite3_stmt *);
-extern int exec_stmt_str(const char *);
-extern int exec_stmt_args(const char *stmt, ...);
+extern int exec_stmt(Ihandle *, sqlite3_stmt *);
+extern int exec_stmt_str(Ihandle *, const char *);
+extern int exec_stmt_args(Ihandle *, const char *, ...);
 extern void db_disable_edit(void);
 extern void db_enable_edit(const char *, const char *, const char *);
