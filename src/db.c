@@ -8,8 +8,17 @@
 #include "yasf.h"
 
 struct {
-	sqlite3 *db;
-} glst[1];
+	sqlite3 *db; /* current db connection */
+	const char *dbname, *type, *name; /* active view info */
+	/* if active view is a table, we have to know its primary key.
+	 * pk == 0: PK is the implicit rowid;
+	 * pk >  0: PK is the pk'th column (starting from 1);
+	 * pk <  0: PK is not applicable (i.e. active view is not a table).
+	 */
+	int pk;
+	/* whether the active view is editable */
+	int editing;
+} glst[1]; /* global state */
 
 static int report(int rc, int fatal)
 {
@@ -152,7 +161,9 @@ int exec_stmt(sqlite3_stmt *stmt)
 	Ihandle *matrix;
 	int rows = 0, cols = 0;
 	int i;
+	int implicit_rowid;
 
+	implicit_rowid = !glst->pk;
 	matrix = IupGetHandle("ctl_matrix");
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
 		const char *s;
@@ -162,29 +173,32 @@ int exec_stmt(sqlite3_stmt *stmt)
 			IupSetInt(matrix, "NUMLIN", 0);
 			IupSetInt(matrix, "NUMCOL", 0);
 
-			cols = sqlite3_column_count(stmt);
+			/* cols is the actual number of columns, excluding
+			 * the implicit rowid */
+			cols = sqlite3_column_count(stmt) - implicit_rowid;
+			assert(cols >= 1);
 			IupSetInt(matrix, "NUMCOL", cols);
 			for (i = 0; i < cols; i++) {
-				s = sqlite3_column_name(stmt, i);
+				s = sqlite3_column_name(stmt, i + implicit_rowid);
 				IupSetStrAttributeId2(matrix, "", 0, i+1, s);
 			}
 		}
 		IupSetInt(matrix, "NUMLIN", ++rows);
-		for (i = 0; i < cols; i++) {
-			if (sqlite3_column_type(stmt, i) == SQLITE_NULL) {
+		for (i = -implicit_rowid; i < cols; i++) {
+			if (sqlite3_column_type(stmt, i + implicit_rowid) == SQLITE_NULL) {
 				s = "NULL";
 				IupSetRGBId2(matrix, "FGCOLOR", rows, i+1, 192, 192, 192);
 			} else {
-				s = (const char *) sqlite3_column_text(stmt, i);
+				s = (const char *) sqlite3_column_text(stmt, i + implicit_rowid);
 			}
 			IupSetStrAttributeId2(matrix, "", rows, i+1, s);
 			fprintf(stderr, "COLUMN! (%d)\n",
-				sqlite3_column_type(stmt, i));
+				sqlite3_column_type(stmt, i + implicit_rowid));
 		}
 		fprintf(stderr, "ROW!\n");
 	}
-	for (i = 0; i < cols; i++) {
-		IupSetStrf(matrix, "FITTOTEXT", "C%d", i+1);
+	for (i = 0; i <= cols; i++) {
+		IupSetStrf(matrix, "FITTOTEXT", "C%d", i);
 	}
 	//IupSetAttribute(matrix, "REDRAW", "ALL");
 	if (rc != SQLITE_DONE) {
@@ -234,4 +248,70 @@ int exec_stmt_args(const char *stmt, ...)
 	rc = exec_stmt_str(zSql);
 	sqlite3_free(zSql);
 	return rc;
+}
+
+void db_disable_edit(void)
+{
+	glst->dbname = glst->type = glst->name = 0;
+	glst->pk = -1;
+	glst->editing = 0;
+}
+
+static
+int get_pk_cid(const char *dbname, const char *tablename)
+{
+	char *zSql;
+	sqlite3_stmt *stmt;
+	int rc, cid = 0;
+
+	zSql = sqlite3_mprintf("pragma %Q.table_info(%Q);", dbname, tablename);
+	rc = sqlite3_prepare_v2(glst->db, zSql, -1, &stmt, 0);
+	report(rc, 1);
+	sqlite3_free(zSql);
+	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		int pk;
+
+		pk = sqlite3_column_int(stmt, 5);
+		if (pk) {
+			cid = sqlite3_column_int(stmt, 0) + 1; /* explicit PK */
+			break;
+		}
+	}
+	if (rc != SQLITE_DONE && rc != SQLITE_ROW) report(rc, 1);
+	rc = sqlite3_finalize(stmt);
+	report(rc, 1);
+	return cid;	/* implicit PK (rowid) */
+}
+
+void db_enable_edit(const char *dbname, const char *type, const char *name)
+{
+	if (strcmp(type, "table") == 0) {
+		assert(name);
+		glst->pk = get_pk_cid(dbname, name);
+		exec_stmt_args((glst->pk)
+				? "select * from %Q.%Q;"
+				: "select rowid, * from %Q.%Q",
+			dbname,
+			name
+		);
+	} else {
+		IupMessagef("Sorry...", "Editing %s %s is not implemented.",
+			(type[0] == 'i') ? "an" : "a", type);
+		return;
+	}
+	glst->dbname = dbname;
+	glst->type = type;
+	glst->name = name;
+	glst->editing = 1;
+}
+
+int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
+{
+	if (mode == 1) { /* enter */
+		return (glst->editing) ? IUP_CONTINUE : IUP_IGNORE;
+	} else if (update) { /* leave */
+		IupMessage("Sorry...", "Modifying data is not implemented.");
+		return IUP_IGNORE;
+	}
+	return IUP_CONTINUE;
 }

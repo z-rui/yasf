@@ -225,7 +225,7 @@ int cb_table_viewdata(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
-	exec_stmt_args("select * from %Q.%Q;", dbname, tablename);
+	db_enable_edit(dbname, type, tablename);
 	return IUP_DEFAULT;
 }
 
@@ -235,6 +235,7 @@ int cb_table_viewschema(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
+	db_disable_edit();
 	exec_stmt_args("pragma %Q.table_info(%Q);", dbname, tablename);
 	return IUP_DEFAULT;
 }
@@ -311,5 +312,6 @@ void reg_cb(void)
 	REGISTER(cb_table_drop);
 	REGISTER(cb_tree_showrename);
 	REGISTER(cb_tree_rename);
+	REGISTER(cb_matrix_edit);
 }
 
