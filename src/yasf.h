@@ -3,8 +3,6 @@
 /* in db.c */
 extern void db_init(void);
 extern void db_file(const char *);
-extern int db_attach(const char *, const char *);
-extern int db_detach(const char *);
 extern void db_finalize(void);
 extern int cb_edit_pragmas(Ihandle *);
 extern int cb_matrix_edit(Ihandle *, int, int, int, int);

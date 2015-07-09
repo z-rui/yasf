@@ -121,30 +121,6 @@ void db_file(const char *filename)
 	update_treeview();
 }
 
-int db_attach(const char *filename, const char *dbname)
-{
-	int rc;
-	char *zSql;
-
-	zSql = sqlite3_mprintf("attach %Q as %Q;", filename, dbname);
-	rc = sqlite3_exec(glst->db, zSql, 0, 0, 0);
-	if (report(rc, 0)) return 0;
-	update_treeview();
-	return 1;
-}
-
-int db_detach(const char *dbname)
-{
-	int rc;
-	char *zSql;
-
-	zSql = sqlite3_mprintf("detach %Q;", dbname);
-	rc = sqlite3_exec(glst->db, zSql, 0, 0, 0);
-	if (report(rc, 0)) return 0;
-	update_treeview();
-	return 1;
-}
-
 void db_finalize(void)
 {
 	int rc;

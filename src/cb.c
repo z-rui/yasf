@@ -91,7 +91,11 @@ int cb_file_attach(Ihandle *ih)
 			"Attach as: %s\n",
 			dbname
 		);
-		if (rc) db_attach(filename, dbname);
+		if (rc) {
+			rc = exec_stmt_args("attach %Q as %Q;", filename, dbname);
+			if (rc == SQLITE_OK)
+				update_treeview();
+		}
 	}
 	return IUP_DEFAULT;
 }
@@ -144,7 +148,9 @@ int cb_file_detach(Ihandle *ih)
 	rc = IupListDialog(1, "Detach", count, dbnames, 1, 1, 10, 0);
 	if (rc >= 0) {
 		assert(rc < count);
-		db_detach(dbnames[rc]);
+		rc = exec_stmt_args("detach %Q;", dbnames[rc]);
+		if (rc == SQLITE_OK)
+			update_treeview();
 	}
 	free(dbnames);
 	return IUP_DEFAULT;
