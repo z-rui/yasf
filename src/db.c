@@ -176,8 +176,9 @@ int exec_stmt(Ihandle *matrix, sqlite3_stmt *stmt)
 	if (rc != SQLITE_DONE) {
 		fprintf(stderr, "ERROR!\n"); // XXX
 		report(rc, 0);
+		return rc;
 	}
-	return rc;
+	return SQLITE_OK;
 }
 
 int exec_stmt_str(Ihandle *matrix, const char *s)
@@ -197,7 +198,7 @@ int exec_stmt_str(Ihandle *matrix, const char *s)
 		);
 		if (report(rc, 0)) continue;
 		if (stmt) {
-			exec_stmt(matrix, stmt);
+			rc = exec_stmt(matrix, stmt);
 			sqlite3_finalize(stmt);
 		}
 		s = tail;
