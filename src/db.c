@@ -9,7 +9,7 @@
 
 struct {
 	sqlite3 *db; /* current db connection */
-	const char *dbname, *type, *name; /* active view info */
+	char *dbname, *type, *name; /* active view info */
 	/* if active view is a table, we have to know its primary key.
 	 * pk == 0: PK is the implicit rowid;
 	 * pk >  0: PK is the pk'th column (starting from 1);
@@ -224,6 +224,9 @@ int exec_stmt_args(Ihandle *matrix, const char *stmt, ...)
 
 void db_disable_edit(void)
 {
+	free(glst->dbname);
+	free(glst->type);
+	free(glst->name);
 	glst->dbname = glst->type = glst->name = 0;
 	glst->pk = -1;
 	glst->editing = 0;
@@ -272,9 +275,9 @@ void db_enable_edit(const char *dbname, const char *type, const char *name)
 			(type[0] == 'i') ? "an" : "a", type);
 		return;
 	}
-	glst->dbname = dbname;
-	glst->type = type;
-	glst->name = name;
+	glst->dbname = strdup(dbname);
+	glst->type = strdup(type);
+	glst->name = strdup(name);
 	glst->editing = 1;
 }
 
