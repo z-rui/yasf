@@ -30,7 +30,7 @@ yasf: $(OBJS)
 		-liup_scintilla \
 		-lsqlite3
 
-main.o: src/main.c
+main.o: src/main.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 stub.o: src/stub.c
@@ -39,10 +39,10 @@ stub.o: src/stub.c
 led.o: led.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-cb.o: src/cb.c
+cb.o: src/cb.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-db.o: src/db.c pragmas.c
+db.o: src/db.c pragmas.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 pragmas.c: src/pragmas.lua
