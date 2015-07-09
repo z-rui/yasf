@@ -100,7 +100,7 @@ int cb_file_attach(Ihandle *ih)
 			dbname
 		);
 		if (rc) {
-			rc = exec_stmt_args(ctl_matrix, "attach %Q as %Q;", filename, dbname);
+			rc = exec_stmt_args(ctl_matrix, "attach %Q as \"%w\";", filename, dbname);
 			if (rc == SQLITE_OK)
 				update_treeview(ctl_tree);
 		}
@@ -156,7 +156,7 @@ int cb_file_detach(Ihandle *ih)
 	rc = IupListDialog(1, "Detach", count, dbnames, 1, 1, 10, 0);
 	if (rc >= 0) {
 		assert(rc < count);
-		rc = exec_stmt_args(ctl_matrix, "detach %Q;", dbnames[rc]);
+		rc = exec_stmt_args(ctl_matrix, "detach \"%w\";", dbnames[rc]);
 		if (rc == SQLITE_OK)
 			update_treeview(ctl_tree);
 	}
@@ -250,7 +250,7 @@ int cb_table_viewschema(Ihandle *ih)
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
 	db_disable_edit();
-	exec_stmt_args(ctl_matrix, "pragma %Q.table_info(%Q);", dbname, tablename);
+	exec_stmt_args(ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
 	return IUP_DEFAULT;
 }
 
@@ -278,7 +278,7 @@ int cb_table_drop(Ihandle *ih)
 	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
 	assert(rc == 1 || rc == 2);
 	if (rc == 1) {
-		rc = exec_stmt_args(ctl_matrix, "drop table %Q.%Q", dbname, tablename);
+		rc = exec_stmt_args(ctl_matrix, "drop table \"%w\".\"%w\"", dbname, tablename);
 		update_treeview(ctl_tree);
 	}
 	return IUP_DEFAULT;
@@ -302,7 +302,7 @@ int cb_tree_rename(Ihandle *ih, int id, char *title)
 	int rc;
 
 	get_node_info(&dbname, &type, &tablename);
-	rc = exec_stmt_args(ctl_matrix, "alter table %Q.%Q rename to %Q", dbname, tablename, title);
+	rc = exec_stmt_args(ctl_matrix, "alter table \"%w\".\"%w\" rename to \"%w\"", dbname, tablename, title);
 	return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 }
 

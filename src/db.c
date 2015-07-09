@@ -46,7 +46,7 @@ int add_detail(Ihandle *tree, int id, const char *dbname)
 	sqlite3_stmt *stmt;
 	char *zSql;
 
-	zSql = sqlite3_mprintf("select name from %Q.sqlite_master where type = ?;", dbname);
+	zSql = sqlite3_mprintf("select name from \"%w\".sqlite_master where type = ?;", dbname);
 	rc = sqlite3_prepare_v2(glst->db, zSql, -1, &stmt, 0);
 	report(rc, 1);
 	sqlite3_free(zSql);
@@ -240,7 +240,7 @@ int get_pk_cid(const char *dbname, const char *tablename)
 	sqlite3_stmt *stmt;
 	int rc, cid = 0;
 
-	zSql = sqlite3_mprintf("pragma %Q.table_info(%Q);", dbname, tablename);
+	zSql = sqlite3_mprintf("pragma \"%w\".table_info(\"%w\");", dbname, tablename);
 	rc = sqlite3_prepare_v2(glst->db, zSql, -1, &stmt, 0);
 	report(rc, 1);
 	sqlite3_free(zSql);
@@ -265,9 +265,8 @@ void db_enable_edit(const char *dbname, const char *type, const char *name)
 		assert(name);
 		glst->pk = get_pk_cid(dbname, name);
 		exec_stmt_args(IupGetHandle("ctl_matrix"),
-			(glst->pk)
-				? "select * from %Q.%Q;"
-				: "select rowid, * from %Q.%Q",
+			"select %s from \"%w\".\"%w\";",
+			(glst->pk) ? "*" : "rowid, *",
 			dbname,
 			name
 		);
@@ -304,7 +303,7 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 		/* XXX Values might be a huge blob or long string.
 		 * This is very common, so it's better to use sqlite3_bind_*
 		 * rather than string-based method. */
-		rc = exec_stmt_args(ih, "update %Q.%Q set %Q = %Q where \"%w\" = %Q;",
+		rc = exec_stmt_args(ih, "update \"%w\".\"%w\" set \"%w\" = %Q where \"%w\" = %Q;",
 			glst->dbname,
 			glst->name,
 			colname,
