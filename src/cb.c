@@ -188,8 +188,10 @@ int cb_tree_rightclick(Ihandle *ih, int id)
 			menu = IupGetHandle("mnu_table_leaf");
 			IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
 		} else if (strcmp(type, "index") == 0) {
-			// TODO
+			menu = IupGetHandle("mnu_index_leaf");
+			IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
 		} else if (strcmp(type, "view") == 0) {
+			// TODO
 		} else if (strcmp(type, "trigger") == 0) {
 		} else {
 			assert(0 && "unknown node type");
@@ -243,14 +245,20 @@ int cb_table_viewdata(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
-int cb_table_viewschema(Ihandle *ih)
+int cb_viewschema(Ihandle *ih)
 {
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
-	assert(strcmp(type, "table") == 0);
-	db_disable_edit();
-	exec_stmt_args(ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
+	if (strcmp(type, "table") == 0) {
+		db_disable_edit();
+		exec_stmt_args(ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
+	} else if (strcmp(type, "index") == 0) {
+		db_disable_edit();
+		exec_stmt_args(ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
+	} else {
+		assert(0 && "unknown type");
+	}
 	return IUP_DEFAULT;
 }
 
@@ -263,22 +271,21 @@ int cb_table_rename(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
-int cb_table_drop(Ihandle *ih)
+int cb_drop(Ihandle *ih)
 {
 	int rc;
 	static char buf[512];
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
-	assert(strcmp(type, "table") == 0);
 
 	if (strlen(tablename) > 400)
 		return IUP_DEFAULT; /* too long table name may overflow buffer */
-	sprintf(buf, "Drop table '%s'?", tablename);
+	sprintf(buf, "Drop %s '%s'?", type, tablename);
 	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
 	assert(rc == 0 || rc == 1 || rc == 2);
 	if (rc == 1) {
-		rc = exec_stmt_args(ctl_matrix, "drop table \"%w\".\"%w\"", dbname, tablename);
+		rc = exec_stmt_args(ctl_matrix, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
 		update_treeview(ctl_tree);
 	}
 	return IUP_DEFAULT;
@@ -321,9 +328,9 @@ void reg_cb(void)
 	REGISTER(cb_default_close);
 	REGISTER(cb_tree_rightclick);
 	REGISTER(cb_table_viewdata);
-	REGISTER(cb_table_viewschema);
+	REGISTER(cb_viewschema);
 	REGISTER(cb_table_rename);
-	REGISTER(cb_table_drop);
+	REGISTER(cb_drop);
 	REGISTER(cb_tree_showrename);
 	REGISTER(cb_tree_rename);
 	REGISTER(cb_matrix_edit);

@@ -80,8 +80,14 @@ dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.
 
 mnu_table_leaf = menu(
   item("View data\tEnter", cb_table_viewdata),
-  item("View schema", cb_table_viewschema),
+  item("View schema", cb_viewschema),
   separator(),
   item("Rename\tF2", cb_table_rename),
-  item("Drop\tDel", cb_table_drop)
+  item("Drop\tDel", cb_drop)
+)
+
+mnu_index_leaf = menu(
+  item("View schema\tEnter", cb_viewschema),
+  separator(),
+  item("Drop\tDel", cb_drop)
 )
