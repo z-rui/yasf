@@ -276,7 +276,7 @@ int cb_table_drop(Ihandle *ih)
 		return IUP_DEFAULT; /* too long table name may overflow buffer */
 	sprintf(buf, "Drop table '%s'?", tablename);
 	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
-	assert(rc == 1 || rc == 2);
+	assert(rc == 0 || rc == 1 || rc == 2);
 	if (rc == 1) {
 		rc = exec_stmt_args(ctl_matrix, "drop table \"%w\".\"%w\"", dbname, tablename);
 		update_treeview(ctl_tree);
