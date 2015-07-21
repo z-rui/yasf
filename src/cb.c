@@ -313,6 +313,24 @@ int cb_tree_rename(Ihandle *ih, int id, char *title)
 	return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 }
 
+int cb_edit_create_table(Ihandle *ih)
+{
+	Ihandle *dlg;
+
+	dlg = IupGetHandle("dlg_create_table");
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	return IUP_DEFAULT;
+}
+
+int cb_edit_create_index(Ihandle *ih)
+{
+	Ihandle *dlg;
+
+	dlg = IupGetHandle("dlg_create_index");
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	return IUP_DEFAULT;
+}
+
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
 
 void reg_cb(void)
@@ -322,6 +340,8 @@ void reg_cb(void)
 	REGISTER(cb_file_open);
 	REGISTER(cb_file_attach);
 	REGISTER(cb_file_detach);
+	REGISTER(cb_edit_create_table);
+	REGISTER(cb_edit_create_index);
 	REGISTER(cb_edit_pragmas);
 	REGISTER(cb_execute);
 	REGISTER(cb_help_about);

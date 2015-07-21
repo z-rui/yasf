@@ -91,3 +91,50 @@ mnu_index_leaf = menu(
   separator(),
   item("Drop\tDel", cb_drop)
 )
+
+dlg_create_table = dialog[TITLE="Create table"](vbox[EXPAND="YES"](
+  frame[TITLE="Table name"](hbox(
+    list[DROPDOWN="YES"](cb_ct_dbname),
+    label("."),
+    text(cb_ct_tablename),
+    fill()
+  )),
+  frame[TITLE="Schema"](
+    matrix[EXPAND="YES"](cb_ct_matrix)
+  ),
+  hbox(
+    fill(),
+    button("&OK", cb_ct_ok),
+    button("&Cancel", cb_default_close)
+  )
+))
+
+dlg_create_index = dialog[TITLE="Create index"](vbox[EXPAND="YES"](
+  frame[TITLE="Index name"](hbox(
+    list[DROPDOWN="YES"](cb_ci_dbname),
+    label("."),
+    text(cb_ct_indexname),
+    fill()
+  )),
+  frame[TITLE="Columns"](hbox(
+    list[EXPAND="YES"](cb_ci_llist),
+    vbox(
+      button(">>", cb_ci_addall),
+      button(">", cb_ci_addone),
+      button("<", cb_ci_delone),
+      button("<<", cb_ci_delall)
+    ),
+    list[EXPAND="YES"](cb_ci_rlist),
+    vbox(
+      button("^^", cb_ci_top),
+      button("^", cb_ci_up),
+      button("v", cb_ci_down),
+      button("vv", cb_ci_bottom)
+    )
+  )),
+  hbox(
+    fill(),
+    button("&OK", cb_ct_ok),
+    button("&Cancel", cb_default_close)
+  )
+))
