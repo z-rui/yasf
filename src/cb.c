@@ -21,6 +21,52 @@ int cb_main_init(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
+int sqlcb_mat(void *data, int cols, char **val, char **title)
+{
+	Ihandle *matrix;
+	int rows;
+	int i;
+
+	/* do not rely on global variable here, for future convenience. */
+	matrix = (Ihandle *) data;
+	rows = IupGetInt(matrix, "NUMLIN");
+	if (rows == 0) {
+		/* set up the titles */
+		/* don't bother with primary keys now */
+		IupSetInt(matrix, "NUMCOL", cols);
+		for (i = 0; i < cols; i++) {
+			IupSetStrAttributeId2(matrix, "", 0, i+1, title[i]);
+		}
+	}
+	IupSetInt(matrix, "NUMLIN", ++rows);
+	for (i = 0; i < cols; i++) {
+		IupSetStrAttributeId2(matrix, "", rows, i+1, val[i] ? val[i] : "(NULL)");
+	}
+	return 0;
+}
+
+static
+void fit_cols(Ihandle *matrix)
+{
+#if 0
+	int cols;
+
+	cols = IupGetInt(matrix, "NUMCOL");
+	while (cols) {
+		IupSetStrf(matrix, "FITTOTEXT", "C%d", cols--);
+	}
+#else
+	IupSetStrf(matrix, "REDRAW", "ALL");
+#endif
+}
+
+static
+void clear(Ihandle *matrix)
+{
+	IupSetInt(matrix, "NUMLIN", 0);
+	IupSetInt(matrix, "NUMCOL", 0);
+}
+
 int cb_execute(Ihandle *ih)
 {
 	Ihandle *cmdline;
@@ -28,7 +74,9 @@ int cb_execute(Ihandle *ih)
 
 	cmdline = IupGetHandle("ctl_cmdline");
 	s = IupGetAttribute(cmdline, "VALUE");
-	exec_stmt_str(ctl_matrix, s);
+	clear(ctl_matrix);
+	db_exec_str(s, sqlcb_mat, (void *) ctl_matrix);
+	fit_cols(ctl_matrix);
 	return IUP_DEFAULT;
 }
 
@@ -100,7 +148,7 @@ int cb_file_attach(Ihandle *ih)
 			dbname
 		);
 		if (rc) {
-			rc = exec_stmt_args(ctl_matrix, "attach %Q as \"%w\";", filename, dbname);
+			rc = db_exec_args(0, 0, "attach %Q as \"%w\";", filename, dbname);
 			if (rc == SQLITE_OK)
 				update_treeview(ctl_tree);
 		}
@@ -156,7 +204,7 @@ int cb_file_detach(Ihandle *ih)
 	rc = IupListDialog(1, "Detach", count, dbnames, 1, 1, 10, 0);
 	if (rc >= 0) {
 		assert(rc < count);
-		rc = exec_stmt_args(ctl_matrix, "detach \"%w\";", dbnames[rc]);
+		rc = db_exec_args(0, 0, "detach \"%w\";", dbnames[rc]);
 		if (rc == SQLITE_OK)
 			update_treeview(ctl_tree);
 	}
@@ -241,7 +289,9 @@ int cb_table_viewdata(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	assert(strcmp(type, "table") == 0);
+	clear(ctl_matrix);
 	db_enable_edit(dbname, type, tablename);
+	fit_cols(ctl_matrix);
 	return IUP_DEFAULT;
 }
 
@@ -251,11 +301,15 @@ int cb_viewschema(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
+		clear(ctl_matrix);
 		db_disable_edit();
-		exec_stmt_args(ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
+		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
+		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "index") == 0) {
+		clear(ctl_matrix);
 		db_disable_edit();
-		exec_stmt_args(ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
+		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
+		fit_cols(ctl_matrix);
 	} else {
 		assert(0 && "unknown type");
 	}
@@ -285,7 +339,7 @@ int cb_drop(Ihandle *ih)
 	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
 	assert(rc == 0 || rc == 1 || rc == 2);
 	if (rc == 1) {
-		rc = exec_stmt_args(ctl_matrix, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
+		rc = db_exec_args(0, 0, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
 		update_treeview(ctl_tree);
 	}
 	return IUP_DEFAULT;
@@ -309,7 +363,7 @@ int cb_tree_rename(Ihandle *ih, int id, char *title)
 	int rc;
 
 	get_node_info(&dbname, &type, &tablename);
-	rc = exec_stmt_args(ctl_matrix, "alter table \"%w\".\"%w\" rename to \"%w\"", dbname, tablename, title);
+	rc = db_exec_args(0, 0, "alter table \"%w\".\"%w\" rename to \"%w\"", dbname, tablename, title);
 	return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 }
 

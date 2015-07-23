@@ -127,98 +127,33 @@ void db_finalize(void)
 
 #include "pragmas.c"
 
-int exec_stmt(Ihandle *matrix, sqlite3_stmt *stmt)
+#include <stdarg.h>
+
+int db_exec_str(const char *sql, int (*callback)(void *, int, char **, char **), void *data)
 {
+	char *errmsg = 0;
 	int rc;
-	int rows = 0, cols = 0;
-	int i;
-	int implicit_rowid;
 
-	implicit_rowid = !glst->pk;
-	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		const char *s;
-
-		if (!matrix)	/* no output */
-			continue;
-		if (rows == 0) {
-			IupSetAttribute(matrix, "CLEARVALUE", "ALL");
-			IupSetInt(matrix, "NUMLIN", 0);
-			IupSetInt(matrix, "NUMCOL", 0);
-
-			/* cols is the actual number of columns, excluding
-			 * the implicit rowid */
-			cols = sqlite3_column_count(stmt) - implicit_rowid;
-			assert(cols >= 1);
-			IupSetInt(matrix, "NUMCOL", cols);
-			for (i = 0; i < cols; i++) {
-				s = sqlite3_column_name(stmt, i + implicit_rowid);
-				IupSetStrAttributeId2(matrix, "", 0, i+1, s);
-			}
-		}
-		IupSetInt(matrix, "NUMLIN", ++rows);
-		for (i = -implicit_rowid; i < cols; i++) {
-			if (sqlite3_column_type(stmt, i + implicit_rowid) == SQLITE_NULL) {
-				s = "NULL";
-				IupSetRGBId2(matrix, "FGCOLOR", rows, i+1, 192, 192, 192);
-			} else {
-				s = (const char *) sqlite3_column_text(stmt, i + implicit_rowid);
-			}
-			IupSetStrAttributeId2(matrix, "", rows, i+1, s);
-			fprintf(stderr, "COLUMN! (%d)\n",
-				sqlite3_column_type(stmt, i + implicit_rowid));
-		}
-		fprintf(stderr, "ROW!\n");
-	}
-	for (i = 0; i <= cols; i++) {
-		IupSetStrf(matrix, "FITTOTEXT", "C%d", i);
-	}
-	//IupSetAttribute(matrix, "REDRAW", "ALL");
-	if (rc != SQLITE_DONE) {
-		fprintf(stderr, "ERROR!\n"); // XXX
-		report(rc, 0);
-		return rc;
-	}
-	return SQLITE_OK;
-}
-
-int exec_stmt_str(Ihandle *matrix, const char *s)
-{
-	int rc = SQLITE_OK;
-	sqlite3_stmt *stmt;
-	const char *tail;
-
-	assert(s);
-	while (rc == SQLITE_OK && s[0]) {
-		rc = sqlite3_prepare_v2(
-			glst->db,	/* db */
-			s,		/* zSql */
-			-1,		/* nByte */
-			&stmt,		/* ppStmt */
-			&tail		/* pzTail XXX */
-		);
-		if (report(rc, 0)) continue;
-		if (stmt) {
-			rc = exec_stmt(matrix, stmt);
-			sqlite3_finalize(stmt);
-		}
-		s = tail;
+	rc = sqlite3_exec(glst->db, sql, callback, data, &errmsg);
+	if (rc != SQLITE_OK) {
+		report(rc, 0); /* XXX cannot make use of errmsg for compatibility with report() */
+		sqlite3_free(errmsg);
 	}
 	return rc;
 }
 
-#include <stdarg.h>
-
-int exec_stmt_args(Ihandle *matrix, const char *stmt, ...)
+int db_exec_args(int (*callback)(void *, int, char **, char **), void *data, const char *sql, ...)
 {
 	char *zSql;
 	va_list va;
 	int rc;
 
-	va_start(va, stmt);
-	zSql = sqlite3_vmprintf(stmt, va);
+	va_start(va, sql);
+	zSql = sqlite3_vmprintf(sql, va);
 	va_end(va);
-	if (!zSql) return SQLITE_NOMEM;
-	rc = exec_stmt_str(matrix, zSql);
+	if (!zSql)
+		return SQLITE_NOMEM;
+	rc = db_exec_str(zSql, callback, data);
 	sqlite3_free(zSql);
 	return rc;
 }
@@ -264,7 +199,8 @@ void db_enable_edit(const char *dbname, const char *type, const char *name)
 	if (strcmp(type, "table") == 0) {
 		assert(name);
 		glst->pk = get_pk_cid(dbname, name);
-		exec_stmt_args(IupGetHandle("ctl_matrix"),
+		/* TODO do not rely on global identifer here? */
+		db_exec_args(sqlcb_mat, IupGetHandle("ctl_matrix"),
 			"select %s from \"%w\".\"%w\";",
 			(glst->pk) ? "*" : "rowid, *",
 			dbname,
@@ -283,6 +219,8 @@ void db_enable_edit(const char *dbname, const char *type, const char *name)
 
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
+	/* TODO cannot edit yet, since the primary key is not tracked. */
+#if 0
 	if (mode == 1) { /* enter */
 		return (glst->editing) ? IUP_CONTINUE : IUP_IGNORE;
 	} else if (update) { /* leave */
@@ -303,7 +241,7 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 		/* XXX Values might be a huge blob or long string.
 		 * This is very common, so it's better to use sqlite3_bind_*
 		 * rather than string-based method. */
-		rc = exec_stmt_args(ih, "update \"%w\".\"%w\" set \"%w\" = %Q where \"%w\" = %Q;",
+		rc = db_exec_args(ih, "update \"%w\".\"%w\" set \"%w\" = %Q where \"%w\" = %Q;",
 			glst->dbname,
 			glst->name,
 			colname,
@@ -318,4 +256,7 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 		}
 	}
 	return IUP_CONTINUE;
+#else
+	return IUP_IGNORE;
+#endif
 }
