@@ -213,36 +213,22 @@ int cb_file_detach(Ihandle *ih)
 }
 
 static
-const char *get_title_at_depth(Ihandle *tree, int id, int at_depth)
-{
-	int depth;
-
-	depth = IupGetIntId(tree, "DEPTH", id);
-	if (depth < at_depth)
-		return 0;
-	while (depth-- > at_depth) {
-		id = IupGetIntId(tree, "PARENT", id);
-	}
-	return IupGetAttributeId(tree, "TITLE", id);
-}
-
-static
 void get_node_info(const char **dbname, const char **type, const char **leafname)
 {
 	int id, depth;
-	Ihandle *tree;
+	const char **p[] = {dbname, type, leafname};
 
-	tree = IupGetHandle("ctl_tree");
-	id = IupGetInt(tree, "VALUE");
-	depth = IupGetIntId(tree, "DEPTH", id);
-	assert(strcmp(IupGetAttributeId(tree, "KIND", id), (depth == 3) ? "LEAF" : "BRANCH") == 0);
+	*dbname = *type = *leafname = 0;
 
-	if (leafname)
-		*leafname = get_title_at_depth(tree, id, 3);
-	if (type)
-		*type = get_title_at_depth(tree, id, 2);
-	if (dbname)
-		*dbname = get_title_at_depth(tree, id, 1);
+	id = IupGetInt(ctl_tree, "VALUE");
+	depth = IupGetIntId(ctl_tree, "DEPTH", id);
+	assert(0 <= depth && depth <= 3);
+
+	while (depth-- > 0) {
+		if (p[depth])
+			*p[depth] = IupGetAttributeId(ctl_tree, "TITLE", id);
+		id = IupGetIntId(ctl_tree, "PARENT", id);
+	}
 }
 
 int cb_tree_rightclick(Ihandle *ih, int id)
