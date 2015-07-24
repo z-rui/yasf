@@ -326,6 +326,19 @@ int cb_table_rename(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
+int IupAlarm2(const char *title, const char *msg, const char *buttons)
+{
+	Ihandle *dlg;
+
+	dlg = IupMessageDlg();
+	IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
+	IupSetAttribute(dlg, "TITLE", "Drop");
+	IupSetAttribute(dlg, "BUTTONS", "YESNO");
+	IupSetAttribute(dlg, "VALUE", msg);
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	return IupGetInt(dlg, "BUTTONRESPONSE");
+}
+
 int cb_drop(Ihandle *ih)
 {
 	int rc;
@@ -337,8 +350,8 @@ int cb_drop(Ihandle *ih)
 	if (strlen(tablename) > 400)
 		return IUP_DEFAULT; /* too long table name may overflow buffer */
 	sprintf(buf, "Drop %s '%s'?", type, tablename);
-	rc = IupAlarm("Drop", buf, "Yes", "No", 0);
-	assert(rc == 0 || rc == 1 || rc == 2);
+	rc = IupAlarm2("Drop", buf, "YESNO");
+	assert(rc == 1 || rc == 2);
 	if (rc == 1) {
 		rc = db_exec_args(0, 0, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
 		update_treeview(ctl_tree);
