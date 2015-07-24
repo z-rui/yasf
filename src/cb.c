@@ -315,6 +315,7 @@ int cb_table_rename(Ihandle *ih)
 int IupAlarm2(const char *title, const char *msg, const char *buttons)
 {
 	Ihandle *dlg;
+	int rc;
 
 	dlg = IupMessageDlg();
 	IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
@@ -322,7 +323,10 @@ int IupAlarm2(const char *title, const char *msg, const char *buttons)
 	IupSetAttribute(dlg, "BUTTONS", "YESNO");
 	IupSetAttribute(dlg, "VALUE", msg);
 	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
-	return IupGetInt(dlg, "BUTTONRESPONSE");
+	rc = IupGetInt(dlg, "BUTTONRESPONSE");
+	IupDestroy(dlg);
+
+	return rc;
 }
 
 int cb_drop(Ihandle *ih)
