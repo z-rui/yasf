@@ -156,59 +156,66 @@ int cb_file_attach(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
-static
-int get_detachable_dbnames(const char ***plist)
+int cb_dlg_button(Ihandle *ih)
 {
-	int countdb, countid;
-	Ihandle *tree;
-	int id, i;
+	Ihandle *dlg;
 
-	tree = IupGetHandle("ctl_tree");
-	countdb = IupGetIntId(tree, "CHILDCOUNT", 0) - 2;
+	dlg = IupGetDialog(ih);
+	IupSetInt(dlg, "BUTTONRESPONSE", IupGetInt(ih, "RESPONSE_"));
+	return IUP_CLOSE;
+}
 
-	if (countdb == 0) return 0;
-	assert(countdb > 0);
+static
+int sqlcb_dblist(void *data, int cols, char **val, char **title)
+{
+	Ihandle *list;
+	const char *dbname;
 
-	*plist = malloc(sizeof (char *) * countdb);
-	if (!*plist) return -1;
+	list = (Ihandle *) data;
+	assert(cols == 3);
+	dbname = val[1];
+	if (strcmp(dbname, "main") != 0 && strcmp(dbname, "temp") != 0)
+		IupSetStrAttribute(list, "APPENDITEM", dbname);
+	return 0;
+}
 
-	countid = IupGetInt(tree, "COUNT");
-	i = 0;
-	for (id = 1; id <= countid; id++) {
-		if (IupGetIntId(tree, "DEPTH", id) == 1) {
-			char *dbname;
+static
+const char *select_database(void)
+{
+	Ihandle *dlg, *list;
+	const char *dbname = 0;
+	int rc;
 
-			dbname = IupGetAttributeId(tree, "TITLE", id);
-			if (strcmp(dbname, "main") != 0 && strcmp(dbname, "temp") != 0) {
-				assert(i < countdb);
-				(*plist)[i++] = dbname;
-			}
+	dlg = IupGetHandle("dlg_detach");
+	list = IupGetDialogChild(dlg, "dblist");
+
+	IupMap(dlg);
+	db_exec_str("pragma database_list;", sqlcb_dblist, (void *) list);
+
+	if (IupGetInt(list, "COUNT") == 0) {
+		IupMessage("Error", "No database can be detached.");
+	} else {
+		IupSetInt(list, "VALUE", 1);
+		IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+		rc = IupGetInt(dlg, "BUTTONRESPONSE");
+		if (rc == 1) {
+			dbname = IupGetAttribute(list, "VALUESTRING");
 		}
 	}
-	assert(i == countdb);
-	return countdb;
+	IupUnmap(dlg);
+	return dbname;
 }
 
 int cb_file_detach(Ihandle *ih)
 {
-	int rc;
-	const char **dbnames = 0;
-	int count;
+	const char *dbname;
 
-	count = get_detachable_dbnames(&dbnames);
-	if (!count) {
-		IupMessage("Detach", "No database is able to be detached.");
-		return IUP_DEFAULT;
-	}
-	if (!dbnames) return IUP_DEFAULT;
-	rc = IupListDialog(1, "Detach", count, dbnames, 1, 1, 10, 0);
-	if (rc >= 0) {
-		assert(rc < count);
-		rc = db_exec_args(0, 0, "detach \"%w\";", dbnames[rc]);
+	dbname = select_database();
+	if (dbname) {
+		int rc = db_exec_args(0, 0, "detach \"%w\";", dbname);
 		if (rc == SQLITE_OK)
 			update_treeview(ctl_tree);
 	}
-	free(dbnames);
 	return IUP_DEFAULT;
 }
 
@@ -412,5 +419,6 @@ void reg_cb(void)
 	REGISTER(cb_tree_showrename);
 	REGISTER(cb_tree_rename);
 	REGISTER(cb_matrix_edit);
+	REGISTER(cb_dlg_button);
 }
 

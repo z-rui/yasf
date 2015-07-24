@@ -78,6 +78,15 @@ dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
 
 dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.db;*.sqlite|All files (*.*)|*.*"]()
 
+dlg_detach = dialog[TITLE="Detach table"](vbox[MARGIN="10x10", GAP=10](
+  list[EXPAND="YES", SIZE="120x100", NAME="dblist"](NULL),
+  hbox[MARGIN="0x0"](
+    fill(),
+    button[RESPONSE_=1]("OK", cb_dlg_button),
+    button[RESPONSE_=2]("Cancel", cb_dlg_button)
+  )
+))
+
 mnu_table_leaf = menu(
   item("View data\tEnter", cb_viewdata),
   item("View schema", cb_viewschema),
