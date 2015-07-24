@@ -213,44 +213,6 @@ int cb_file_detach(Ihandle *ih)
 }
 
 static
-const char *get_leaf_type(Ihandle *tree, int id)
-{
-	int id1;
-
-	id1 = IupGetIntId(tree, "PARENT", id);
-	return IupGetAttributeId(tree, "TITLE", id1);
-}
-
-int cb_tree_rightclick(Ihandle *ih, int id)
-{
-	const char *type;
-	Ihandle *menu;
-
-	IupSetFocus(ih);
-	type = IupGetAttributeId(ih, "KIND", id);
-	fprintf(stderr, "RIGHT CLICK! (%s %d)\n", type, id);
-	IupSetInt(ih, "VALUE", id);
-	if (strcmp(type, "LEAF") == 0) {
-		type = get_leaf_type(ih, id);
-		if (strcmp(type, "table") == 0) {
-			menu = IupGetHandle("mnu_table_leaf");
-			IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
-		} else if (strcmp(type, "index") == 0) {
-			menu = IupGetHandle("mnu_index_leaf");
-			IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
-		} else if (strcmp(type, "view") == 0) {
-			// TODO
-		} else if (strcmp(type, "trigger") == 0) {
-		} else {
-			assert(0 && "unknown node type");
-		}
-	} else {
-		// TODO handle branches
-	}
-	return IUP_DEFAULT;
-}
-
-static
 const char *get_title_at_depth(Ihandle *tree, int id, int at_depth)
 {
 	int depth;
@@ -283,15 +245,50 @@ void get_node_info(const char **dbname, const char **type, const char **leafname
 		*dbname = get_title_at_depth(tree, id, 1);
 }
 
-int cb_table_viewdata(Ihandle *ih)
+int cb_tree_rightclick(Ihandle *ih, int id)
+{
+	Ihandle *menu = 0;
+	const char *dbname, *type, *leafname;
+
+	IupSetFocus(ih);
+	IupSetInt(ih, "VALUE", id);
+	get_node_info(&dbname, &type, &leafname);
+	if (leafname) { /* LEAF */
+		if (strcmp(type, "table") == 0) {
+			menu = IupGetHandle("mnu_table_leaf");
+		} else if (strcmp(type, "index") == 0) {
+			menu = IupGetHandle("mnu_index_leaf");
+		} else if (strcmp(type, "view") == 0) {
+			menu = IupGetHandle("mnu_view_leaf");
+		} else if (strcmp(type, "trigger") == 0) {
+			menu = IupGetHandle("mnu_trigger_leaf");
+		} else {
+			assert(0 && "unknown node type");
+		}
+	} else if (type) {
+		// TODO handle branches
+	} else if (dbname) {
+		menu = IupGetHandle("mnu_database_branch");
+	} else {
+		// TODO handle root
+	}
+	if (menu)
+		IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
+	return IUP_DEFAULT;
+}
+
+int cb_viewdata(Ihandle *ih)
 {
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
-	assert(strcmp(type, "table") == 0);
-	clear(ctl_matrix);
-	db_enable_edit(dbname, type, tablename);
-	fit_cols(ctl_matrix);
+	if (strcmp(type, "table") == 0 || strcmp(type, "view") == 0) {
+		clear(ctl_matrix);
+		db_enable_edit(dbname, type, tablename);
+		fit_cols(ctl_matrix);
+	} else {
+		assert(0 && "unknown type");
+	}
 	return IUP_DEFAULT;
 }
 
@@ -310,6 +307,10 @@ int cb_viewschema(Ihandle *ih)
 		db_disable_edit();
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
+	} else if (strcmp(type, "view") == 0) {
+		// TODO
+	} else if (strcmp(type, "trigger") == 0) {
+		// TODO
 	} else {
 		assert(0 && "unknown type");
 	}
@@ -401,7 +402,7 @@ void reg_cb(void)
 	REGISTER(cb_help_about);
 	REGISTER(cb_default_close);
 	REGISTER(cb_tree_rightclick);
-	REGISTER(cb_table_viewdata);
+	REGISTER(cb_viewdata);
 	REGISTER(cb_viewschema);
 	REGISTER(cb_table_rename);
 	REGISTER(cb_drop);

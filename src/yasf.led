@@ -79,7 +79,7 @@ dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
 dlg_open = filedlg[ALLOWNEW="YES", EXTFILTER="SQLite database (*.db;*.sqlite)|*.db;*.sqlite|All files (*.*)|*.*"]()
 
 mnu_table_leaf = menu(
-  item("View data\tEnter", cb_table_viewdata),
+  item("View data\tEnter", cb_viewdata),
   item("View schema", cb_viewschema),
   separator(),
   item("Rename\tF2", cb_table_rename),
@@ -90,6 +90,24 @@ mnu_index_leaf = menu(
   item("View schema\tEnter", cb_viewschema),
   separator(),
   item("Drop\tDel", cb_drop)
+)
+
+mnu_view_leaf = menu(
+  item("View data\tEnter", cb_viewdata),
+  item("View schema", cb_viewschema),
+  separator(),
+  item("Drop\tDel", cb_drop)
+)
+
+mnu_trigger_leaf = menu(
+  item("View schema", cb_viewschema),
+  separator(),
+  item("Drop\tDel", cb_drop)
+)
+
+mnu_database_branch = menu(
+  item("Vacuum", cb_vacuum),
+  item("Analyze", cb_analyze)
 )
 
 dlg_create_table = dialog[TITLE="Create table"](vbox[EXPAND="YES"](
