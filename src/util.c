@@ -23,7 +23,7 @@ char *bufnew(size_t size)
 	return 0;
 }
 
-char *bufext(char *buf, size_t n)
+char *bufext(char *buf, size_t n, char **tail)
 {
 	size_t len;
 
@@ -44,6 +44,7 @@ char *bufext(char *buf, size_t n)
 			return buf = 0;
 		}
 	}
+	*tail = buf + BUFFER(buf)->len;
 	BUFFER(buf)->len = len;
 	buf[len] = 0;
 	return buf;
@@ -51,13 +52,13 @@ char *bufext(char *buf, size_t n)
 
 char *bufcat(char *buf, const char *s)
 {
-	size_t slen, len;
+	size_t slen;
+	char *p;
 
 	if (!buf) return 0;
 	slen = strlen(s);
-	len = BUFFER(buf)->len;
-	if ((buf = bufext(buf, slen)))
-		memcpy(buf + len, s, slen);
+	if ((buf = bufext(buf, slen, &p)))
+		memcpy(p, s, slen);
 	return buf;
 }
 

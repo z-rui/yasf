@@ -29,7 +29,7 @@ extern int cb_delall(Ihandle *);
 /* in util.c */
 #include <stddef.h>	/* for size_t */
 extern char *bufnew(size_t);
-extern char *bufext(char *, size_t);
+extern char *bufext(char *, size_t, char **);
 extern char *bufcat(char *, const char *);
 extern void buffree(char *);
 extern size_t buflen(char *);

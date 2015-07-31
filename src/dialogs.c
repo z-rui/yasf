@@ -117,13 +117,10 @@ int cb_ci_map(Ihandle *ih)
 static
 char *bufcatQ(char *buf, const char *s)
 {
-	size_t len;
 	char *p;
 
-	len = buflen(buf);
-	buf = bufext(buf, escquote(0, s, '"') + 2);
+	buf = bufext(buf, escquote(0, s, '"') + 2, &p);
 	if (buf) {
-		p = buf + len;
 		*p++ = '"';
 		p += escquote(p, s, '"');
 		*p = '"';
