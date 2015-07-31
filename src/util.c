@@ -3,7 +3,7 @@
 #include <string.h>
 
 struct buffer {
-	size_t size, len;
+	size_t size;
 	char bytes[1];
 };
 
@@ -16,50 +16,51 @@ char *bufnew(size_t size)
 	buf = malloc(sizeof (struct buffer) + size);
 	if (buf) {
 		buf->size = size;
-		buf->len = 0;
 		buf->bytes[0] = 0;
 		return buf->bytes;
 	}
 	return 0;
 }
 
-char *bufext(char *buf, size_t n, char **tail)
+char *bufext(char **base, char *tail, size_t n)
 {
-	size_t len;
+	size_t len, len1, size;
 
-	if (!buf) return 0;
-	len = BUFFER(buf)->len + n;
-	if (BUFFER(buf)->size < len) {
-		size_t size = BUFFER(buf)->size;
+	if (!tail) return 0;
+	len = (size_t) (tail - *base);
+	len1 = len + n;
+	if ((size = BUFFER(*base)->size) < len1) {
 		struct buffer *buffer;
 
 		do
 			size *= 2;
-		while (size < len);
-		if ((buffer = realloc(BUFFER(buf), sizeof (struct buffer) + size))) {
+		while (size < len1);
+		if ((buffer = realloc(BUFFER(*base), sizeof (struct buffer) + size))) {
 			buffer->size = size;
-			buf = buffer->bytes;
+			*base = buffer->bytes;
 		} else {	/* OOM */
-			free(BUFFER(buf));
-			return buf = 0;
+			return 0;
 		}
 	}
-	*tail = buf + BUFFER(buf)->len;
-	BUFFER(buf)->len = len;
-	buf[len] = 0;
-	return buf;
+	/* defensive programming: put a sentinel zero right after the desired
+	 * length, so that the buffer is always a legal C string and the user
+	 * is free to use use string routines in standard library. */
+	(*base)[len1] = 0;
+	return tail = *base + len;
 }
 
-char *bufcat(char *buf, const char *s)
+char *bufcat(char **base, char *tail, const char *s)
 {
 	size_t slen;
-	char *p;
 
-	if (!buf) return 0;
+	if (!tail) return 0;
 	slen = strlen(s);
-	if ((buf = bufext(buf, slen, &p)))
-		memcpy(p, s, slen);
-	return buf;
+	tail = bufext(base, tail, slen);
+	if (tail) {
+		memcpy(tail, s, slen);
+		tail += slen;
+	}
+	return tail;
 }
 
 void buffree(char *buf)

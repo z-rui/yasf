@@ -115,24 +115,22 @@ int cb_createindex_map(Ihandle *ih)
 }
 
 static
-char *bufcatQ(char *buf, const char *s)
+char *bufcatQ(char **buf, char *p, const char *s)
 {
-	char *p;
-
-	buf = bufext(buf, escquote(0, s, '"') + 2, &p);
-	if (buf) {
+	p = bufext(buf, p, escquote(0, s, '"') + 2);
+	if (p) {
 		*p++ = '"';
 		p += escquote(p, s, '"');
-		*p = '"';
+		*p++ = '"';
 	}
-	return buf;
+	return p;
 }
 
 int cb_createindex_ok(Ihandle *ih)
 {
 	Ihandle *rlist;
 	const char *dbname, *indexname, *tablename, *column;
-	char *buf;
+	char *buf, *p;
 	int ncol, i, rc = IUP_DEFAULT;
 
 	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
@@ -145,29 +143,29 @@ int cb_createindex_ok(Ihandle *ih)
 		return IUP_DEFAULT;
 	}
 
-	buf = bufnew(BUFSIZ);
-	buf = bufcat(buf, "create ");
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "create ");
 	if (IupGetInt(IupGetDialogChild(ih, "unique"), "VALUE") == 1) {
-		buf = bufcat(buf, "unique ");
+		p = bufcat(&buf, p, "unique ");
 	}
-	buf = bufcat(buf, "index ");
-	buf = bufcatQ(buf, dbname);
-	buf = bufcat(buf, ".");
-	buf = bufcatQ(buf, indexname);
-	buf = bufcat(buf, " on ");
-	buf = bufcatQ(buf, tablename);
-	buf = bufcat(buf, " (");
+	p = bufcat (&buf, p, "index ");
+	p = bufcatQ(&buf, p, dbname);
+	p = bufcat (&buf, p, ".");
+	p = bufcatQ(&buf, p, indexname);
+	p = bufcat (&buf, p, " on ");
+	p = bufcatQ(&buf, p, tablename);
+	p = bufcat (&buf, p, " (");
 
 	rlist = IupGetDialogChild(ih, "rlist");
 	ncol = IupGetInt(rlist, "COUNT");
 	for (i = 1; i <= ncol; i++) {
 		column = IupGetAttributeId(rlist, "", i);
-		buf = bufcatQ(buf, column);
+		p = bufcatQ(&buf, p, column);
 		if (i < ncol)
-			buf = bufcat(buf, ", ");
+			p = bufcat(&buf, p, ", ");
 	}
-	buf = bufcat(buf, ");");
-	if (!buf) {
+	p = bufcat(&buf, p, ");");
+	if (!p) {
 		IupMessage("Error", "Out of memory");
 	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
 		update_treeview(IupGetHandle("ctl_tree"));

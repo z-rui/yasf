@@ -339,23 +339,23 @@ int IupAlarm2(const char *title, const char *msg, const char *buttons)
 int cb_drop(Ihandle *ih)
 {
 	int rc;
-	char *buf;
+	char *buf, *p;
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
 
-	buf = bufnew(BUFSIZ);
-	buf = bufcat(buf, "Drop ");
-	buf = bufcat(buf, type);
-	buf = bufcat(buf, " ");
-	buf = bufcat(buf, tablename);
-	buf = bufcat(buf, "?");
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "Drop ");
+	p = bufcat(&buf, p, type);
+	p = bufcat(&buf, p, " ");
+	p = bufcat(&buf, p, tablename);
+	p = bufcat(&buf, p, "?");
 
-	if (!buf) {
-		IupMessage("Error", "Out of Memory");
-		return IUP_DEFAULT;
+	if (!p) {	/* OOM, but have a try anyway... */
+		rc = IupAlarm2("Drop", "Drop the table?", "YESNO");
+	} else {
+		rc = IupAlarm2("Drop", buf, "YESNO");
 	}
-	rc = IupAlarm2("Drop", buf, "YESNO");
 	assert(rc == 1 || rc == 2);
 	buffree(buf);
 	if (rc == 1) {
