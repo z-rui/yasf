@@ -88,12 +88,12 @@ int sqlcb_dblist(void *data, int cols, char **val, char **title)
 	Ihandle *tablelist = (Ihandle *) data;
 
 	assert(cols == 3);
-	if (strcmp(val[0], "temp") != 0)
+	if (strcmp(val[1], "temp") != 0)
 		IupSetStrAttribute(tablelist, "APPENDITEM", val[1]);
 	return 0;
 }
 
-int cb_ci_map(Ihandle *ih)
+int cb_createindex_map(Ihandle *ih)
 {
 	Ihandle *dblist;
 
@@ -140,7 +140,7 @@ int cb_createindex_ok(Ihandle *ih)
 	tablename = IupGetAttribute(IupGetDialogChild(ih, "tablelist"), "VALUESTRING");
 
 	assert(dbname && indexname);
-	if (tablename) {
+	if (!tablename) {
 		IupMessage("Error", "You have to specify the table name.");
 		return IUP_DEFAULT;
 	}

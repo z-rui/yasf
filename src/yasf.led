@@ -136,7 +136,7 @@ dlg_create_table = dialog[TITLE="Create table"](vbox[EXPAND="YES"](
   )
 ))
 
-dlg_create_index = dialog[TITLE="Create index", MAP_CB=cb_ci_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
+dlg_create_index = dialog[TITLE="Create index", MAP_CB=cb_createindex_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
   frame[TITLE="Index name"](hbox[NMARGIN="5x5", NORMALIZESIZE="VERTICAL"](
     list[NAME="dblist", DROPDOWN="YES"](cb_update_tablelist),
     label("."),

@@ -433,7 +433,7 @@ void reg_cb(void)
 	REGISTER(cb_dlg_button);
 	REGISTER(cb_update_columns);
 	REGISTER(cb_update_tablelist);
-	REGISTER(cb_ci_map);
+	REGISTER(cb_createindex_map);
 	REGISTER(cb_createindex_ok);
 	REGISTER(cb_addall);
 	REGISTER(cb_addone);
