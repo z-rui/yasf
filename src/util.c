@@ -68,11 +68,6 @@ void buffree(char *buf)
 		free(BUFFER(buf));
 }
 
-size_t buflen(char *buf)
-{
-	return (buf) ? BUFFER(buf)->len : 0;
-}
-
 size_t escquote(char *out, const char *in, int esc)
 {
 	if (out) {

@@ -32,5 +32,4 @@ extern char *bufnew(size_t);
 extern char *bufext(char *, size_t, char **);
 extern char *bufcat(char *, const char *);
 extern void buffree(char *);
-extern size_t buflen(char *);
 extern size_t escquote(char *, const char *, int);
