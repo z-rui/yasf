@@ -20,7 +20,7 @@ extern int sqlcb_mat(void *, int, char **, char **);
 extern int cb_update_columns(Ihandle *, char *, int, int);
 extern int cb_update_tablelist(Ihandle *, char *, int, int);
 extern int cb_ci_map(Ihandle *);
-extern int cb_ct_ok(Ihandle *);
+extern int cb_createindex_ok(Ihandle *);
 extern int cb_addall(Ihandle *);
 extern int cb_addone(Ihandle *);
 extern int cb_delone(Ihandle *);

@@ -131,7 +131,7 @@ dlg_create_table = dialog[TITLE="Create table"](vbox[EXPAND="YES"](
   ),
   hbox(
     fill(),
-    button("&OK", cb_ct_ok),
+    button("&OK", cb_createtable_ok),
     button("&Cancel", cb_default_close)
   )
 ))
@@ -163,7 +163,7 @@ dlg_create_index = dialog[TITLE="Create index", MAP_CB=cb_ci_map](vbox[EXPAND="Y
   ),
   hbox[NORMALIZESIZE="HORIZONTAL"](
     fill(),
-    button[PADDING="10x4"]("&OK", cb_ct_ok),
+    button[PADDING="10x4"]("&OK", cb_createindex_ok),
     button[PADDING="10x4"]("&Cancel", cb_default_close)
   )
 ))

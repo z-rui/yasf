@@ -128,7 +128,7 @@ char *bufcatQ(char *buf, const char *s)
 	return buf;
 }
 
-int cb_ct_ok(Ihandle *ih)
+int cb_createindex_ok(Ihandle *ih)
 {
 	Ihandle *rlist;
 	const char *dbname, *indexname, *tablename, *column;
@@ -139,9 +139,9 @@ int cb_ct_ok(Ihandle *ih)
 	indexname = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
 	tablename = IupGetAttribute(IupGetDialogChild(ih, "tablelist"), "VALUESTRING");
 
-	assert(dbname);
-	if (!indexname || !tablename) {
-		IupMessage("Error", "You have to specify the table/index name.");
+	assert(dbname && indexname);
+	if (tablename) {
+		IupMessage("Error", "You have to specify the table name.");
 		return IUP_DEFAULT;
 	}
 
