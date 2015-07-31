@@ -36,6 +36,15 @@ void db_init(void)
 	/* XXX do nothing now */
 }
 
+int db_prepare(const char *zSql, sqlite3_stmt **ppStmt)
+{
+	int rc;
+
+	rc = sqlite3_prepare_v2(glst->db, zSql, -1, ppStmt, 0);
+	report(rc, 0);
+	return rc;
+}
+
 static
 int add_detail(Ihandle *tree, int id, const char *dbname)
 {
@@ -44,12 +53,16 @@ int add_detail(Ihandle *tree, int id, const char *dbname)
 	};
 	int i, parentid, rc;
 	sqlite3_stmt *stmt;
-	char *zSql;
 
-	zSql = sqlite3_mprintf("select name from \"%w\".sqlite_master where type = ?;", dbname);
-	rc = sqlite3_prepare_v2(glst->db, zSql, -1, &stmt, 0);
-	report(rc, 1);
-	sqlite3_free(zSql);
+	if (strcmp(dbname, "temp") != 0) {
+		char *zSql;
+
+		zSql = sqlite3_mprintf("select name from \"%w\".sqlite_master where type = ?;", dbname);
+		db_prepare(zSql, &stmt);
+		sqlite3_free(zSql);
+	} else {
+		db_prepare("select name from sqlite_temp_master where type = ?;", &stmt);
+	}
 
 	parentid = id;
 	for (i = 0; objtypes[i]; i++) {
@@ -76,7 +89,7 @@ void update_treeview(Ihandle *tree)
 	sqlite3_stmt *stmt;
 
 	/* first, clear all nodes in the tree ... */
-	IupSetAttribute(tree, "DELNODE0", "CHILDREN");
+	IupSetAttributeId(tree, "DELNODE", 0, "CHILDREN");
 
 	/* then, get all database info */
 	rc = sqlite3_prepare_v2(glst->db, "pragma database_list;", -1, &stmt, 0);
@@ -99,6 +112,7 @@ void update_treeview(Ihandle *tree)
 	 * (maybe because there are not any temp tables).
 	 * We'd better add it manually. */
 	IupSetAttributeId(tree, "INSERTBRANCH", parentid, "temp");
+	add_detail(tree, ++id, "temp");
 }
 
 void db_file(const char *filename)
