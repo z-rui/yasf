@@ -14,3 +14,12 @@ extern void db_enable_edit(const char *, const char *, const char *);
 
 /* in cb.c */
 extern int sqlcb_mat(void *, int, char **, char **);
+
+/* in util.c */
+#include <stddef.h>	/* for size_t */
+extern char *bufnew(size_t);
+extern char *bufext(char *, size_t);
+extern char *bufcat(char *, const char *);
+extern void buffree(char *);
+extern size_t buflen(char *);
+extern size_t escquote(char *, const char *, int);
