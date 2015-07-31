@@ -339,16 +339,25 @@ int IupAlarm2(const char *title, const char *msg, const char *buttons)
 int cb_drop(Ihandle *ih)
 {
 	int rc;
-	static char buf[512];
+	char *buf;
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
 
-	if (strlen(tablename) > 400)
-		return IUP_DEFAULT; /* too long table name may overflow buffer */
-	sprintf(buf, "Drop %s '%s'?", type, tablename);
+	buf = bufnew(BUFSIZ);
+	buf = bufcat(buf, "Drop ");
+	buf = bufcat(buf, type);
+	buf = bufcat(buf, " ");
+	buf = bufcat(buf, tablename);
+	buf = bufcat(buf, "?");
+
+	if (!buf) {
+		IupMessage("Error", "Out of Memory");
+		return IUP_DEFAULT;
+	}
 	rc = IupAlarm2("Drop", buf, "YESNO");
 	assert(rc == 1 || rc == 2);
+	buffree(buf);
 	if (rc == 1) {
 		rc = db_exec_args(0, 0, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
 		update_treeview(ctl_tree);
