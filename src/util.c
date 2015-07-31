@@ -39,10 +39,9 @@ char *bufext(char *buf, size_t n)
 		if ((buffer = realloc(BUFFER(buf), sizeof (struct buffer) + size))) {
 			buffer->size = size;
 			buf = buffer->bytes;
-		} else {
-			/* OOM */
+		} else {	/* OOM */
 			free(BUFFER(buf));
-			buf = 0;
+			return buf = 0;
 		}
 	}
 	BUFFER(buf)->len = len;
