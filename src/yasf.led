@@ -136,32 +136,34 @@ dlg_create_table = dialog[TITLE="Create table"](vbox[EXPAND="YES"](
   )
 ))
 
-dlg_create_index = dialog[TITLE="Create index"](vbox[EXPAND="YES"](
-  frame[TITLE="Index name"](hbox(
-    list[DROPDOWN="YES"](cb_ci_dbname),
+dlg_create_index = dialog[TITLE="Create index", MAP_CB=cb_ci_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
+  frame[TITLE="Index name"](hbox[NMARGIN="5x5", NORMALIZESIZE="VERTICAL"](
+    list[NAME="dblist", DROPDOWN="YES"](cb_update_tablelist),
     label("."),
-    text(cb_ct_indexname),
-    fill()
+    text[NAME="name", EXPAND="HORIZONTAL"](NULL),
+    label("on"),
+    list[NAME="tablelist", DROPDOWN="YES"](cb_update_columns)
   )),
-  frame[TITLE="Columns"](hbox(
-    list[EXPAND="YES"](cb_ci_llist),
-    vbox(
-      button(">>", cb_ci_addall),
-      button(">", cb_ci_addone),
-      button("<", cb_ci_delone),
-      button("<<", cb_ci_delall)
-    ),
-    list[EXPAND="YES"](cb_ci_rlist),
-    vbox(
-      button("^^", cb_ci_top),
-      button("^", cb_ci_up),
-      button("v", cb_ci_down),
-      button("vv", cb_ci_bottom)
-    )
-  )),
+  toggle[NAME="unique"]("Unique", NULL),
   hbox(
+    frame[TITLE="Unindexed columns"](hbox[NMARGIN="5x5"](
+      list[NAME="llist", EXPAND="YES"](NULL)
+    )),
+    vbox[NORMALIZESIZE="HORIZONTAL"](
+      fill(),
+      button(">>", cb_addall),
+      button(">", cb_addone),
+      button("<", cb_delone),
+      button("<<", cb_delall),
+      fill()
+    ),
+    frame[TITLE="Indexed columns"](hbox[NMARGIN="5x5"](
+      list[NAME="rlist", EXPAND="YES"](NULL)
+    ))
+  ),
+  hbox[NORMALIZESIZE="HORIZONTAL"](
     fill(),
-    button("&OK", cb_ct_ok),
-    button("&Cancel", cb_default_close)
+    button[PADDING="10x4"]("&OK", cb_ct_ok),
+    button[PADDING="10x4"]("&Cancel", cb_default_close)
   )
 ))

@@ -168,7 +168,6 @@ void db_disable_edit(void)
 	glst->editing = 0;
 }
 
-static
 int get_pk_cid(const char *dbname, const char *tablename)
 {
 	char *zSql;

@@ -196,7 +196,7 @@ const char *select_database(void)
 		IupMessage("Error", "No database can be detached.");
 	} else {
 		IupSetInt(list, "VALUE", 1);
-		IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+		IupPopup(dlg, IUP_CENTER, IUP_CENTER);
 		rc = IupGetInt(dlg, "BUTTONRESPONSE");
 		if (rc == 1) {
 			dbname = IupGetAttribute(list, "VALUESTRING");
@@ -392,7 +392,9 @@ int cb_edit_create_index(Ihandle *ih)
 	Ihandle *dlg;
 
 	dlg = IupGetHandle("dlg_create_index");
-	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	IupMap(dlg);
+	IupPopup(dlg, IUP_CENTER, IUP_CENTER);
+	IupUnmap(dlg);
 	return IUP_DEFAULT;
 }
 
@@ -420,5 +422,13 @@ void reg_cb(void)
 	REGISTER(cb_tree_rename);
 	REGISTER(cb_matrix_edit);
 	REGISTER(cb_dlg_button);
+	REGISTER(cb_update_columns);
+	REGISTER(cb_update_tablelist);
+	REGISTER(cb_ci_map);
+	REGISTER(cb_ct_ok);
+	REGISTER(cb_addall);
+	REGISTER(cb_addone);
+	REGISTER(cb_delone);
+	REGISTER(cb_delall);
 }
 

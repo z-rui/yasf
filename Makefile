@@ -6,7 +6,7 @@ LEDC=bin/ledc
 CFLAGS+=-Iinclude -I.
 LDFLAGS=-Llib/$(TEC_UNAME)
 
-OBJS=main.o led.o stub.o cb.o db.o
+OBJS=main.o led.o stub.o cb.o db.o dialogs.o util.o
 
 ifneq "$(findstring w4, $(TEC_UNAME))" ""
  ifneq "$(findstring 64, $(TEC_UNAME))" ""
@@ -43,6 +43,12 @@ cb.o: src/cb.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 db.o: src/db.c pragmas.c src/yasf.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+dialogs.o: src/dialogs.c src/yasf.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+util.o: src/util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 pragmas.c: src/pragmas.lua
