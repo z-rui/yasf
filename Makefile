@@ -3,8 +3,7 @@ CFLAGS=-Og -g -Wall
 
 LEDC=bin/ledc
 
-CFLAGS+=-Iinclude -I.
-LDFLAGS=-Llib/$(TEC_UNAME)
+CFLAGS+=-I.
 
 OBJS=main.o led.o stub.o cb.o db.o dialogs.o util.o
 
