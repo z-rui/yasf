@@ -387,22 +387,14 @@ int cb_tree_rename(Ihandle *ih, int id, char *title)
 	return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 }
 
-int cb_edit_create_table(Ihandle *ih)
+int cb_dialog(Ihandle *ih)
 {
 	Ihandle *dlg;
 
-	dlg = IupGetHandle("dlg_create_table");
-	IupMap(dlg);
-	IupPopup(dlg, IUP_CENTER, IUP_CENTER);
-	IupUnmap(dlg);
-	return IUP_DEFAULT;
-}
-
-int cb_edit_create_index(Ihandle *ih)
-{
-	Ihandle *dlg;
-
-	dlg = IupGetHandle("dlg_create_index");
+	dlg = IupGetAttributeHandle(ih, "dialog");
+	if (!dlg) {
+		IupMessage("Not implemented", "Not implemented");
+	}
 	IupMap(dlg);
 	IupPopup(dlg, IUP_CENTER, IUP_CENTER);
 	IupUnmap(dlg);
@@ -418,8 +410,7 @@ void reg_cb(void)
 	REGISTER(cb_file_open);
 	REGISTER(cb_file_attach);
 	REGISTER(cb_file_detach);
-	REGISTER(cb_edit_create_table);
-	REGISTER(cb_edit_create_index);
+	REGISTER(cb_dialog);
 	REGISTER(cb_edit_pragmas);
 	REGISTER(cb_execute);
 	REGISTER(cb_help_about);

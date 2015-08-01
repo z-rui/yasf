@@ -10,10 +10,10 @@ mnu_main = menu(
   )),
   submenu("Edit", menu(
     submenu("&Create", menu(
-      item("&Table...", cb_edit_create_table),
-      item("&Index...", cb_edit_create_index),
-      item("&View...", cb_edit_create_view),
-      item("Tri&gger...", cb_edit_create_trigger)
+      item[dialog="dlg_create_table"]("&Table...", cb_dialog),
+      item[dialog="dlg_create_index"]("&Index...", cb_dialog),
+      item[dialog="dlg_create_view"]("&View...", cb_dialog),
+      item[dialog="dlg_create_trigger"]("Tri&gger...", cb_dialog)
     )),
     item("&Drop...", cb_edit_drop),
     separator(),
@@ -38,7 +38,7 @@ mnu_main = menu(
 
 ctl_toolbar = hbox(
   button("&Open", cb_file_open),
-  button("New &Table", cb_edit_create_table)
+  button[dialog="dlg_create_table"]("New &Table", cb_dialog)
 )
 
 ctl_cmdline = scintilla[
