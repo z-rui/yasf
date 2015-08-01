@@ -119,20 +119,20 @@ mnu_database_branch = menu(
   item("Analyze", cb_analyze)
 )
 
-dlg_create_table = dialog[TITLE="Create table", MAP_CB=cb_createindex_map](vbox[EXPAND="YES"](
-  frame[TITLE="Table name"](hbox[NORMALIZESIZE="VERTICAL"](
+dlg_create_table = dialog[TITLE="Create table", MAP_CB=cb_createindex_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
+  frame[TITLE="Table name"](hbox[NORMALIZESIZE="VERTICAL", NMARGIN="5x5"](
     list[NAME="dblist", DROPDOWN="YES"](NULL),
     label("."),
     text[NAME="name", EXPAND="HORIZONTAL"](NULL),
     fill()
   )),
   frame[TITLE="Schema"](
-    multiline[NAME="schema", EXPAND="YES"](NULL)
+    multiline[NAME="schema", EXPAND="YES", SIZE="200x80"](NULL)
   ),
   hbox(
     fill(),
-    button("&OK", cb_createtable_ok),
-    button("&Cancel", cb_default_close)
+    button[PADDING="10x4"]("&OK", cb_createtable_ok),
+    button[PADDING="10x4"]("&Cancel", cb_default_close)
   )
 ))
 
