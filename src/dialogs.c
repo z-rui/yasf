@@ -223,6 +223,34 @@ int cb_createtable_ok(Ihandle *ih)
 	return rc;
 }
 
+int cb_createview_ok(Ihandle *ih)
+{
+	const char *dbname, *viewname, *schema;
+	char *buf, *p;
+	int rc = IUP_DEFAULT;
+
+	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
+	viewname = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
+	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
+
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat (&buf, p, "create view ");
+	p = bufcatQ(&buf, p, dbname);
+	p = bufcat (&buf, p, ".");
+	p = bufcatQ(&buf, p, viewname);
+	p = bufcat (&buf, p, " as ");
+	p = bufcat (&buf, p, schema);
+	p = bufcat (&buf, p, ";");
+	if (!p) {
+		IupMessage("Error", "Out of memory");
+	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
+		update_treeview(IupGetHandle("ctl_tree"));
+		rc = IUP_CLOSE;
+	}
+	buffree(buf);
+	return rc;
+}
+
 static
 void move_all(Ihandle *llist, Ihandle *rlist)
 {

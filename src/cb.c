@@ -430,6 +430,7 @@ void reg_cb(void)
 	REGISTER(cb_createindex_ok);
 	REGISTER(cb_createtable_map);
 	REGISTER(cb_createtable_ok);
+	REGISTER(cb_createview_ok);
 	REGISTER(cb_addall);
 	REGISTER(cb_addone);
 	REGISTER(cb_delone);

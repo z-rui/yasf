@@ -167,3 +167,20 @@ dlg_create_index = dialog[TITLE="Create index", MAP_CB=cb_createindex_map](vbox[
     button[PADDING="10x4"]("&Cancel", cb_default_close)
   )
 ))
+
+dlg_create_view = dialog[TITLE="Create view", MAP_CB=cb_createtable_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
+  frame[TITLE="View name"](hbox[NORMALIZESIZE="VERTICAL", NMARGIN="5x5"](
+    list[NAME="dblist", DROPDOWN="YES"](NULL),
+    label("."),
+    text[NAME="name", EXPAND="HORIZONTAL"](NULL),
+    fill()
+  )),
+  frame[TITLE="As"](
+    multiline[NAME="schema", EXPAND="YES", SIZE="200x80"](NULL)
+  ),
+  hbox(
+    fill(),
+    button[PADDING="10x4"]("&OK", cb_createview_ok),
+    button[PADDING="10x4"]("&Cancel", cb_default_close)
+  )
+))

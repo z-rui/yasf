@@ -23,6 +23,7 @@ extern int cb_createindex_map(Ihandle *);
 extern int cb_createtable_map(Ihandle *);
 extern int cb_createindex_ok(Ihandle *);
 extern int cb_createtable_ok(Ihandle *);
+extern int cb_createview_ok(Ihandle *);
 extern int cb_addall(Ihandle *);
 extern int cb_addone(Ihandle *);
 extern int cb_delone(Ihandle *);
