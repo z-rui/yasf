@@ -392,7 +392,9 @@ int cb_edit_create_table(Ihandle *ih)
 	Ihandle *dlg;
 
 	dlg = IupGetHandle("dlg_create_table");
-	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	IupMap(dlg);
+	IupPopup(dlg, IUP_CENTER, IUP_CENTER);
+	IupUnmap(dlg);
 	return IUP_DEFAULT;
 }
 
@@ -435,6 +437,8 @@ void reg_cb(void)
 	REGISTER(cb_update_tablelist);
 	REGISTER(cb_createindex_map);
 	REGISTER(cb_createindex_ok);
+	REGISTER(cb_createtable_map);
+	REGISTER(cb_createtable_ok);
 	REGISTER(cb_addall);
 	REGISTER(cb_addone);
 	REGISTER(cb_delone);

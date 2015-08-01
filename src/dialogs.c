@@ -93,24 +93,45 @@ int sqlcb_dblist(void *data, int cols, char **val, char **title)
 	return 0;
 }
 
-int cb_createindex_map(Ihandle *ih)
+static
+void dlg_fitsize(Ihandle *dlg)
 {
-	Ihandle *dblist;
+	IupSetAttribute(dlg, "SIZE", 0);
+	IupRefresh(dlg);
+	fprintf(stderr, "SIZE = %s, NATURALSIZE = %s\n",
+		IupGetAttribute(dlg, "SIZE"),
+		IupGetAttribute(dlg, "NATURALSIZE")
+	);
+}
 
-	dblist = IupGetDialogChild(ih, "dblist");
+static
+void update_dblist(Ihandle *dblist)
+{
 	IupSetAttribute(dblist, "REMOVEITEM", "ALL");
 	db_exec_str("pragma database_list;",
 		sqlcb_dblist, (void *) dblist
 	);
 	IupSetAttribute(dblist, "APPENDITEM", "temp");
 	IupSetInt(dblist, "VALUE", 1);
+}
+
+int cb_createindex_map(Ihandle *ih)
+{
+	Ihandle *dblist;
+
+	dblist = IupGetDialogChild(ih, "dblist");
+	update_dblist(dblist);
 	cb_update_tablelist(dblist, IupGetAttribute(dblist, "VALUESTRING"), 1, 1);
-	IupSetAttribute(ih, "SIZE", 0);
-	IupRefresh(ih);
-	fprintf(stderr, "SIZE = %s, NATURALSIZE = %s\n",
-		IupGetAttribute(ih, "SIZE"),
-		IupGetAttribute(ih, "NATURALSIZE")
-	);
+	dlg_fitsize(ih);
+	return IUP_DEFAULT;
+}
+
+int cb_createtable_map(Ihandle *ih)
+{
+	Ihandle *dblist;
+	dblist = IupGetDialogChild(ih, "dblist");
+	update_dblist(dblist);
+	dlg_fitsize(ih);
 	return IUP_DEFAULT;
 }
 
@@ -165,6 +186,33 @@ int cb_createindex_ok(Ihandle *ih)
 			p = bufcat(&buf, p, ", ");
 	}
 	p = bufcat(&buf, p, ");");
+	if (!p) {
+		IupMessage("Error", "Out of memory");
+	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
+		update_treeview(IupGetHandle("ctl_tree"));
+		rc = IUP_CLOSE;
+	}
+	buffree(buf);
+	return rc;
+}
+
+int cb_createtable_ok(Ihandle *ih)
+{
+	const char *dbname, *tablename, *schema;
+	char *buf, *p;
+	int rc = IUP_DEFAULT;
+
+	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
+	tablename = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
+	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
+
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat (&buf, p, "create table ");
+	p = bufcatQ(&buf, p, dbname);
+	p = bufcat (&buf, p, ".");
+	p = bufcatQ(&buf, p, tablename);
+	p = bufcat (&buf, p, schema);
+	p = bufcat (&buf, p, ";");
 	if (!p) {
 		IupMessage("Error", "Out of memory");
 	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
