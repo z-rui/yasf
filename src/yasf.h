@@ -28,6 +28,10 @@ extern int cb_addall(Ihandle *);
 extern int cb_addone(Ihandle *);
 extern int cb_delone(Ihandle *);
 extern int cb_delall(Ihandle *);
+extern int cb_createtrigger_map(Ihandle *);
+extern int cb_createtrigger_triggeraction(Ihandle *, char *, int, int);
+extern int cb_update_tableviewlist(Ihandle *, char *, int, int);
+extern int cb_createtrigger_ok(Ihandle *);
 
 /* in util.c */
 #include <stddef.h>	/* for size_t */

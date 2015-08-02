@@ -184,3 +184,32 @@ dlg_create_view = dialog[TITLE="Create view", MAP_CB=cb_createtable_map](vbox[EX
     button[PADDING="10x4"]("&Cancel", cb_default_close)
   )
 ))
+
+dlg_create_trigger = dialog[TITLE="Create trigger", MAP_CB=cb_createtrigger_map](vbox[EXPAND="YES", GAP="5", NMARGIN="10x10"](
+  frame[TITLE="Trigger name"](hbox[NORMALIZESIZE="VERTICAL", NMARGIN="5x5"](
+    list[NAME="dblist", DROPDOWN="YES"](cb_update_tableviewlist),
+    label("."),
+    text[NAME="name", EXPAND="HORIZONTAL"](NULL),
+    list[NAME="trigger_type", DROPDOWN="YES"](NULL),
+    list[NAME="trigger_action", DROPDOWN="YES"](cb_createtrigger_triggeraction),
+    hbox[NAME="updateofbox", NORMALIZESIZE="VERTICAL"](
+      toggle[control="updateof"]("of", cb_toggle_control),
+      text[NAME="updateof", ACTIVE="NO"](NULL)
+    ),
+    label("on"),
+    list[NAME="tableviewlist", DROPDOWN="YES"](NULL)
+  )),
+  toggle[NAME="foreachrow"]("for each row", NULL),
+  hbox(
+    toggle[control="when"]("when", cb_toggle_control),
+    text[NAME="when", EXPAND="HORIZONTAL", ACTIVE="NO"](NULL)
+  ),
+  frame[TITLE="Trigger code"](
+    multiline[NAME="code", EXPAND="YES", SIZE="200x80"](NULL)
+  ),
+  hbox(
+    fill(),
+    button[PADDING="10x4"]("&OK", cb_createtrigger_ok),
+    button[PADDING="10x4"]("&Cancel", cb_default_close)
+  )
+))

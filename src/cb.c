@@ -401,6 +401,15 @@ int cb_dialog(Ihandle *ih)
 	return IUP_DEFAULT;
 }
 
+int cb_toggle_control(Ihandle *ih)
+{
+	Ihandle *ctl;
+
+	ctl = IupGetDialogChild(ih, IupGetAttribute(ih, "control"));
+	IupSetInt(ctl, "ACTIVE", IupGetInt(ih, "VALUE"));
+	return IUP_DEFAULT;
+}
+
 #define REGISTER(x) IupSetFunction(#x, (Icallback) &x)
 
 void reg_cb(void)
@@ -435,5 +444,10 @@ void reg_cb(void)
 	REGISTER(cb_addone);
 	REGISTER(cb_delone);
 	REGISTER(cb_delall);
+	REGISTER(cb_toggle_control);
+	REGISTER(cb_createtrigger_map);
+	REGISTER(cb_createtrigger_triggeraction);
+	REGISTER(cb_update_tableviewlist);
+	REGISTER(cb_createtrigger_ok);
 }
 
