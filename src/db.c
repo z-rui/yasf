@@ -9,15 +9,11 @@
 
 struct {
 	sqlite3 *db; /* current db connection */
-	char *dbname, *type, *name; /* active view info */
-	/* if active view is a table, we have to know its primary key.
-	 * pk == 0: PK is the implicit rowid;
-	 * pk >  0: PK is the pk'th column (starting from 1);
-	 * pk <  0: PK is not applicable (i.e. active view is not a table).
-	 */
-	int pk;
-	/* whether the active view is editable */
-	int editing;
+	char *dbname, *tablename; /* info of the table being edited */
+	/* To handle WITHOUT ROWID tables, the name of the primary key
+	 * needs to be stored. 
+	 * TODO Support of WITHOUT ROWID tables is not implemented yet. */
+	/* char *pkname; */
 } glst[1]; /* global state */
 
 static int report(int rc, int fatal)
@@ -172,16 +168,7 @@ int db_exec_args(int (*callback)(void *, int, char **, char **), void *data, con
 	return rc;
 }
 
-void db_disable_edit(void)
-{
-	free(glst->dbname);
-	free(glst->type);
-	free(glst->name);
-	glst->dbname = glst->type = glst->name = 0;
-	glst->pk = -1;
-	glst->editing = 0;
-}
-
+#if 0
 int get_pk_cid(const char *dbname, const char *tablename)
 {
 	char *zSql;
@@ -206,28 +193,84 @@ int get_pk_cid(const char *dbname, const char *tablename)
 	report(rc, 1);
 	return cid;	/* implicit PK (rowid) */
 }
+#endif
 
-void db_enable_edit(const char *dbname, const char *type, const char *name)
+static
+int rowcount(const char *dbname, const char *name)
 {
-	if (strcmp(type, "table") == 0) {
-		assert(name);
-		glst->pk = get_pk_cid(dbname, name);
-		/* TODO do not rely on global identifer here? */
-		db_exec_args(sqlcb_mat, IupGetHandle("ctl_matrix"),
-			"select %s from \"%w\".\"%w\";",
-			(glst->pk) ? "*" : "rowid, *",
-			dbname,
-			name
-		);
+	char *zSql;
+	sqlite3_stmt *stmt;
+	int nrow = 0;
+	int rc;
+
+	zSql = sqlite3_mprintf("select count(*) from \"%w\".\"%w\";",
+		dbname, name);
+	db_prepare(zSql, &stmt);
+	sqlite3_free(zSql);
+	if ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		nrow = sqlite3_column_int(stmt, 0);
 	} else {
-		IupMessagef("Sorry...", "Editing %s %s is not implemented.",
-			(type[0] == 'i') ? "an" : "a", type);
+		report(rc, 0);
+	}
+	sqlite3_finalize(stmt);
+	return nrow;
+}
+
+static
+void fillpkslot(sqlite3_int64 *pkslot, int nrow, const char *dbname, const char *name)
+{
+	char *zSql;
+	sqlite3_stmt *stmt;
+	int n = 0;
+	int rc;
+
+	zSql = sqlite3_mprintf("select rowid from \"%w\".\"%w\" order by rowid asc;",
+		dbname, name);
+	db_prepare(zSql, &stmt);
+	sqlite3_free(zSql);
+	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		assert(n < nrow);
+		pkslot[n++] = sqlite3_column_int64(stmt, 0);
+	}
+	if (rc != SQLITE_DONE) {
+		report(rc, 0);
+	}
+	sqlite3_finalize(stmt);
+	assert(n == nrow);
+	pkslot[n] = 0;
+}
+
+void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
+{
+	int nrow;
+	int rc;
+	sqlite3_int64 *pkslot;
+
+	/* Only tables can be editted. */
+	/* TODO WITHOUT ROWID tables cannot be editted */
+	nrow = rowcount(dbname, name);
+	pkslot = (sqlite3_int64 *) malloc(sizeof (pkslot[0]) * (nrow + 1));
+	if (!pkslot) {
+		IupMessage("Error", "Out of memory");
 		return;
 	}
-	glst->dbname = strdup(dbname);
-	glst->type = strdup(type);
-	glst->name = strdup(name);
-	glst->editing = 1;
+	fillpkslot(pkslot, nrow, dbname, name);
+	rc = db_exec_args(sqlcb_mat, matrix, "select * from \"%w\".\"%w\" order by rowid asc;", dbname, name);
+	IupSetStrAttribute(matrix, "dbname", dbname);
+	IupSetStrAttribute(matrix, "name", name);
+	IupSetAttribute(matrix, "pkslot", (char *) pkslot);
+}
+
+void db_end_edit(Ihandle *matrix)
+{
+	sqlite3_int64 *pkslot;
+
+	IupSetAttribute(matrix, "dbname", 0);
+	IupSetAttribute(matrix, "name", 0);
+	IupSetInt(matrix, "NUMCOL", 0);
+	IupSetInt(matrix, "NUMLIN", 0);
+	pkslot = (sqlite3_int64 *) IupGetAttribute(matrix, "pkslot");
+	free(pkslot);
 }
 
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)

@@ -10,8 +10,8 @@ extern void update_treeview(Ihandle *);
 extern int get_pk_cid(const char *, const char *);
 extern int db_exec_str(const char *, int (*)(void *, int, char **, char **), void *);
 extern int db_exec_args(int (*)(void *, int, char **, char **), void *, const char *, ...);
-extern void db_disable_edit(void);
-extern void db_enable_edit(const char *, const char *, const char *);
+extern void db_end_edit(Ihandle *);
+extern void db_begin_edit(Ihandle *, const char *, const char *);
 
 /* in cb.c */
 extern int sqlcb_mat(void *, int, char **, char **);

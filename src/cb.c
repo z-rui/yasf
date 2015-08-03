@@ -275,9 +275,14 @@ int cb_viewdata(Ihandle *ih)
 	const char *dbname, *type, *tablename;
 
 	get_node_info(&dbname, &type, &tablename);
-	if (strcmp(type, "table") == 0 || strcmp(type, "view") == 0) {
+	if (strcmp(type, "table") == 0) {
 		clear(ctl_matrix);
-		db_enable_edit(dbname, type, tablename);
+		db_begin_edit(ctl_matrix, dbname, tablename);
+		fit_cols(ctl_matrix);
+	} else if (strcmp(type, "view") == 0) {
+		clear(ctl_matrix);
+		db_exec_args(sqlcb_mat, ctl_matrix, "select * from \"%w\".\"%w\";",
+			dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else {
 		assert(0 && "unknown type");
@@ -292,12 +297,12 @@ int cb_viewschema(Ihandle *ih)
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
 		clear(ctl_matrix);
-		db_disable_edit();
+		db_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "index") == 0) {
 		clear(ctl_matrix);
-		db_disable_edit();
+		db_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "view") == 0) {
