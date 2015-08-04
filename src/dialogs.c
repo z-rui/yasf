@@ -325,21 +325,23 @@ int cb_update_tableviewlist(Ihandle *ih, char *text, int item, int state)
 {
 	if (state == 1) {
 		Ihandle *tableviewlist;
+		const char *dbname, *trigger_type;
 
+		dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
+		trigger_type = IupGetAttribute(IupGetDialogChild(ih, "trigger_type"), "VALUESTRING");
 		tableviewlist = IupGetDialogChild(ih, "tableviewlist");
 		IupSetAttribute(tableviewlist, "REMOVEITEM", "ALL");
-		if (strcmp(text, "temp") == 0) {
-			db_exec_str("select name from sqlite_temp_master where type in ('table', 'view');",
-				sqlcb_tablelist, (void *) tableviewlist);
-		} else {
-			db_exec_args(sqlcb_tablelist, (void *) tableviewlist,
-				"select name from \"%w\".sqlite_master where type in ('table', 'view');",
-				text
-			);
-		}
+		db_exec_args(sqlcb_tablelist, (void *) tableviewlist,
+			(strcmp(dbname, "temp") == 0)
+				? "select name from sqlite_%s_master where type=%Q;"
+				: "select name from \"%w\".sqlite_master where type=%Q;",
+			dbname,
+			(strcmp(trigger_type, "instead of")) ? "table" : "view"
+		);
 		if (IupGetInt(tableviewlist, "COUNT") > 0) {
 			IupSetInt(tableviewlist, "VALUE", 1);
 		}
+		IupRefresh(tableviewlist);
 	}
 	return IUP_DEFAULT;
 }
