@@ -2,12 +2,13 @@
 #include <iupcontrols.h>
 #include <iup_scintilla.h>
 
+#include "regcb.h"
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	extern int IupMain(int argc, char *argv[]);
 	extern void led_load(void);
-	extern void reg_cb(void);
 
 	IupOpen(&argc, &argv);
 	IupControlsOpen();
@@ -17,7 +18,8 @@ int main(int argc, char *argv[])
 	IupSetGlobal("UTF8MODE", "yes");
 	IupSetGlobal("UTF8MODE_FILE", "yes");
 
-	reg_cb();
+#include "regcb.c"
+
 	led_load();
 	rc = IupMain(argc, argv);
 

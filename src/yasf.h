@@ -16,23 +16,6 @@ extern void db_begin_edit(Ihandle *, const char *, const char *);
 /* in cb.c */
 extern int sqlcb_mat(void *, int, char **, char **);
 
-/* in dialogs.c */
-extern int cb_update_columns(Ihandle *, char *, int, int);
-extern int cb_update_tablelist(Ihandle *, char *, int, int);
-extern int cb_createindex_map(Ihandle *);
-extern int cb_createtable_map(Ihandle *);
-extern int cb_createindex_ok(Ihandle *);
-extern int cb_createtable_ok(Ihandle *);
-extern int cb_createview_ok(Ihandle *);
-extern int cb_addall(Ihandle *);
-extern int cb_addone(Ihandle *);
-extern int cb_delone(Ihandle *);
-extern int cb_delall(Ihandle *);
-extern int cb_createtrigger_map(Ihandle *);
-extern int cb_createtrigger_triggeraction(Ihandle *, char *, int, int);
-extern int cb_update_tableviewlist(Ihandle *, char *, int, int);
-extern int cb_createtrigger_ok(Ihandle *);
-
 /* in util.c */
 #include <stddef.h>	/* for size_t */
 extern char *bufnew(size_t);

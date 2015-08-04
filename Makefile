@@ -32,7 +32,7 @@ yasf: $(OBJS)
 main.o: src/main.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-stub.o: src/stub.c
+stub.o: src/stub.c regcb.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 led.o: led.c
@@ -53,8 +53,11 @@ util.o: src/util.c
 pragmas.c: src/pragmas.lua
 	lua $<>$@
 
+regcb.c regcb.h: src/regcb.lua
+	lua $< src/*.c
+
 rc.o: src/iup.rc $(MANIFEST)
 	windres $(RCFLAGS) $< -o $@
 
 clean:
-	rm -f *.o led.c pragmas.c
+	rm -f *.o led.c pragmas.c regcb.c regcb.h
