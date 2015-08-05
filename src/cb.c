@@ -45,6 +45,31 @@ int sqlcb_mat(void *data, int cols, char **val, char **title)
 	return 0;
 }
 
+int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
+{
+	sqlite_int64 *pkslot;
+
+	pkslot = (sqlite3_int64 *) IupGetAttribute(ih, "pkslot");
+	if (mode == 1) { /* enter */
+		/* if pkslot is set, then it is in editing mode. */
+		return (pkslot) ? IUP_CONTINUE : IUP_IGNORE;
+	} else if (update) { /* leave */
+		const char *dbname, *name, *colname, *newvalue;
+		int rc;
+
+		dbname = IupGetAttribute(ih, "dbname");
+		name = IupGetAttribute(ih, "name");
+		colname = IupGetAttributeId2(ih, "", 0, col);
+		newvalue = IupGetAttribute(ih, "VALUE");
+		/* TODO WITHOUT ROWID tables are not supported yet. */
+		rc = db_exec_args(0, 0, "update \"%w\".\"%w\" set \"%w\" = %Q where rowid = %d;",
+			dbname, name, colname, newvalue, pkslot[lin-1]
+		);
+		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
+	}
+	return IUP_CONTINUE;
+}
+
 static
 void fit_cols(Ihandle *matrix)
 {

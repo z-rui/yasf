@@ -256,9 +256,13 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 	}
 	fillpkslot(pkslot, nrow, dbname, name);
 	rc = db_exec_args(sqlcb_mat, matrix, "select * from \"%w\".\"%w\" order by rowid asc;", dbname, name);
-	IupSetStrAttribute(matrix, "dbname", dbname);
-	IupSetStrAttribute(matrix, "name", name);
-	IupSetAttribute(matrix, "pkslot", (char *) pkslot);
+	if (rc == SQLITE_OK) {
+		IupSetStrAttribute(matrix, "dbname", dbname);
+		IupSetStrAttribute(matrix, "name", name);
+		IupSetAttribute(matrix, "pkslot", (char *) pkslot);
+	} else {
+		free(pkslot);
+	}
 }
 
 void db_end_edit(Ihandle *matrix)
@@ -272,35 +276,6 @@ void db_end_edit(Ihandle *matrix)
 	pkslot = (sqlite3_int64 *) IupGetAttribute(matrix, "pkslot");
 	IupSetAttribute(matrix, "pkslot", 0);
 	free(pkslot);
-}
-
-int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
-{
-	sqlite_int64 *pkslot;
-
-	pkslot = (sqlite3_int64 *) IupGetAttribute(ih, "pkslot");
-#if 1
-	if (mode == 1) { /* enter */
-		/* if pkslot is set, then it is in editing mode. */
-		return (pkslot) ? IUP_CONTINUE : IUP_IGNORE;
-	} else if (update) { /* leave */
-		const char *dbname, *name, *colname, *newvalue;
-		int rc;
-
-		dbname = IupGetAttribute(ih, "dbname");
-		name = IupGetAttribute(ih, "name");
-		colname = IupGetAttributeId2(ih, "", 0, col);
-		newvalue = IupGetAttribute(ih, "VALUE");
-		/* TODO WITHOUT ROWID tables are not supported yet. */
-		rc = db_exec_args(0, 0, "update \"%w\".\"%w\" set \"%w\" = %Q where rowid = %d;",
-			dbname, name, colname, newvalue, pkslot[lin-1]
-		);
-		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
-	}
-	return IUP_CONTINUE;
-#else
-	return IUP_IGNORE;
-#endif
 }
 
 int db_schema_version(void)
