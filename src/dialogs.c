@@ -168,17 +168,37 @@ char *bufcat2(char **buf, char *p, ...)
 	return p;
 }
 
+static
+const char *DialogChildAttribute(Ihandle *ih, const char *name, const char *attr)
+{
+	return IupGetAttribute(IupGetDialogChild(ih, name), attr);
+}
+
+static
+int exec_and_free(char *buf, char *p)
+{
+	if (!p) {
+		IupMessage("Error", "Out of memory");
+	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
+		update_treeview(IupGetHandle("ctl_tree"));
+		buffree(buf);
+		return IUP_CLOSE;
+	}
+	buffree(buf);
+	return IUP_DEFAULT;
+}
+
 int cb_createindex_ok(Ihandle *ih)
 {
 	Ihandle *rlist;
 	const char *dbname, *indexname, *tablename, *column;
 	char *buf, *p;
 	int ncol, unique;
-	int i, rc = IUP_DEFAULT;
+	int i;
 
-	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
-	indexname = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
-	tablename = IupGetAttribute(IupGetDialogChild(ih, "tablelist"), "VALUESTRING");
+	dbname = DialogChildAttribute(ih, "dblist", "VALUESTRING");
+	indexname = DialogChildAttribute(ih, "name", "VALUE");
+	tablename = DialogChildAttribute(ih, "tablelist", "VALUESTRING");
 
 	assert(dbname && indexname);
 	if (!tablename) {
@@ -201,61 +221,38 @@ int cb_createindex_ok(Ihandle *ih)
 		p = bufcat2(&buf, p, (i > 1) ? ", " : "", column, 0);
 	}
 	p = bufcat(&buf, p, ");");
-	if (!p) {
-		IupMessage("Error", "Out of memory");
-	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
-		update_treeview(IupGetHandle("ctl_tree"));
-		rc = IUP_CLOSE;
-	}
-	buffree(buf);
-	return rc;
+	return exec_and_free(buf, p);
 }
 
 int cb_createtable_ok(Ihandle *ih)
 {
 	const char *dbname, *tablename, *schema;
 	char *buf, *p;
-	int rc = IUP_DEFAULT;
 
-	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
-	tablename = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
-	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
+	dbname = DialogChildAttribute(ih, "dblist", "VALUESTRING");
+	tablename = DialogChildAttribute(ih, "name", "VALUE");
+	schema = DialogChildAttribute(ih, "schema", "VALUE");
 
 	p = buf = bufnew(BUFSIZ);
 	p = bufcat2(&buf, p, "create table ", dbname, ".", tablename, schema, 0);
 	p = bufcat (&buf, p, ";");
-	if (!p) {
-		IupMessage("Error", "Out of memory");
-	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
-		update_treeview(IupGetHandle("ctl_tree"));
-		rc = IUP_CLOSE;
-	}
-	buffree(buf);
-	return rc;
+	return exec_and_free(buf, p);
 }
 
 int cb_createview_ok(Ihandle *ih)
 {
 	const char *dbname, *viewname, *schema;
 	char *buf, *p;
-	int rc = IUP_DEFAULT;
 
-	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
-	viewname = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
-	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
+	dbname = DialogChildAttribute(ih, "dblist", "VALUESTRING");
+	viewname = DialogChildAttribute(ih, "name", "VALUE");
+	schema = DialogChildAttribute(ih, "schema", "VALUE");
 
 	p = buf = bufnew(BUFSIZ);
 	p = bufcat2(&buf, p, "create view ", dbname, ".", viewname, " as ", 0);
 	p = bufcat (&buf, p, schema);
 	p = bufcat (&buf, p, ";");
-	if (!p) {
-		IupMessage("Error", "Out of memory");
-	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
-		update_treeview(IupGetHandle("ctl_tree"));
-		rc = IUP_CLOSE;
-	}
-	buffree(buf);
-	return rc;
+	return exec_and_free(buf, p);
 }
 
 static
@@ -334,8 +331,8 @@ int cb_update_tableviewlist(Ihandle *ih, char *text, int item, int state)
 		Ihandle *tableviewlist;
 		const char *dbname, *trigger_type;
 
-		dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
-		trigger_type = IupGetAttribute(IupGetDialogChild(ih, "trigger_type"), "VALUESTRING");
+		dbname = DialogChildAttribute(ih, "dblist", "VALUESTRING");
+		trigger_type = DialogChildAttribute(ih, "trigger_type", "VALUESTRING");
 		tableviewlist = IupGetDialogChild(ih, "tableviewlist");
 		IupSetAttribute(tableviewlist, "REMOVEITEM", "ALL");
 		db_exec_args(sqlcb_tablelist, (void *) tableviewlist,
@@ -400,11 +397,10 @@ int cb_createtrigger_ok(Ihandle *ih)
 {
 	char *buf, *p;
 	const char *dbname, *triggername, *tablename, *trigger_type, *trigger_action;
-	int rc = IUP_DEFAULT;
 
-	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
-	triggername = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
-	tablename = IupGetAttribute(IupGetDialogChild(ih, "tableviewlist"), "VALUESTRING");
+	dbname = DialogChildAttribute(ih, "dblist", "VALUESTRING");
+	triggername = DialogChildAttribute(ih, "name", "VALUE");
+	tablename = DialogChildAttribute(ih, "tableviewlist", "VALUESTRING");
 
 	assert(dbname && triggername);
 	if (!tablename) {
@@ -414,16 +410,16 @@ int cb_createtrigger_ok(Ihandle *ih)
 
 	p = buf = bufnew(BUFSIZ);
 	p = bufcat2(&buf, p, "create trigger ", dbname, ".", triggername, " ", 0);
-	trigger_type = IupGetAttribute(IupGetDialogChild(ih, "trigger_type"), "VALUESTRING");
+	trigger_type = DialogChildAttribute(ih, "trigger_type", "VALUESTRING");
 	assert(trigger_type);
 	p = bufcat (&buf, p, trigger_type);
 	p = bufcat (&buf, p, " ");
-	trigger_action = IupGetAttribute(IupGetDialogChild(ih, "trigger_action"), "VALUESTRING");
+	trigger_action = DialogChildAttribute(ih, "trigger_action", "VALUESTRING");
 	assert(trigger_action);
 	p = bufcat (&buf, p, trigger_action);
 	if (strcmp(trigger_action, "update") == 0 && IupGetInt(IupGetDialogChild(ih, "updateof"), "ACTIVE")) {
 		p = bufcat (&buf, p, " of ");
-		p = bufcat (&buf, p, IupGetAttribute(IupGetDialogChild(ih, "updateof"), "VALUE"));
+		p = bufcat (&buf, p, DialogChildAttribute(ih, "updateof", "VALUE"));
 	}
 	p = bufcat2(&buf, p, " on ", tablename, 0);
 	if (IupGetInt(IupGetDialogChild(ih, "foreachrow"), "VALUE")) {
@@ -431,17 +427,10 @@ int cb_createtrigger_ok(Ihandle *ih)
 	}
 	if (IupGetInt(IupGetDialogChild(ih, "when"), "ACTIVE")) {
 		p = bufcat (&buf, p, " when ");
-		p = bufcat (&buf, p, IupGetAttribute(IupGetDialogChild(ih, "when"), "VALUE"));
+		p = bufcat (&buf, p, DialogChildAttribute(ih, "when", "VALUE"));
 	}
 	p = bufcat (&buf, p, " begin\n");
-	p = bufcat (&buf, p, IupGetAttribute(IupGetDialogChild(ih, "code"), "VALUE"));
+	p = bufcat (&buf, p, DialogChildAttribute(ih, "code", "VALUE"));
 	p = bufcat (&buf, p, "\nend;");
-	if (!p) {
-		IupMessage("Error", "Out of memory");
-	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
-		update_treeview(IupGetHandle("ctl_tree"));
-		rc = IUP_CLOSE;
-	}
-	buffree(buf);
-	return rc;
+	return exec_and_free(buf, p);
 }
