@@ -54,16 +54,15 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 		/* if pkslot is set, then it is in editing mode. */
 		return (pkslot) ? IUP_CONTINUE : IUP_IGNORE;
 	} else if (update) { /* leave */
-		const char *dbname, *name, *colname, *newvalue;
+		const char *qualified_name, *colname, *newvalue;
 		int rc;
 
-		dbname = IupGetAttribute(ih, "dbname");
-		name = IupGetAttribute(ih, "name");
+		qualified_name = IupGetAttribute(ih, "qualified_name");
 		colname = IupGetAttributeId2(ih, "", 0, col);
 		newvalue = IupGetAttribute(ih, "VALUE");
 		/* TODO WITHOUT ROWID tables are not supported yet. */
-		rc = db_exec_args(0, 0, "update \"%w\".\"%w\" set \"%w\" = %Q where rowid = %d;",
-			dbname, name, colname, newvalue, pkslot[lin-1]
+		rc = db_exec_args(0, 0, "update %s set \"%w\" = %Q where rowid = %d;",
+			qualified_name, colname, newvalue, pkslot[lin-1]
 		);
 		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 	}

@@ -243,6 +243,7 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 	int nrow;
 	int rc;
 	sqlite3_int64 *pkslot;
+	char *qualified_name;
 
 	/* Only tables can be editted. */
 	/* TODO WITHOUT ROWID tables cannot be editted */
@@ -254,10 +255,16 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 	}
 	if (fillpkslot(pkslot, nrow, dbname, name) != nrow)
 		goto sql_error;
-	rc = db_exec_args(sqlcb_mat, matrix, "select * from \"%w\".\"%w\" order by rowid asc;", dbname, name);
+	/* NOTE: change the memory deallocator in db_end_edit if you change
+	 * the memory allocator here. */
+	qualified_name = sqlite3_mprintf("\"%w\".\"%w\"", dbname, name);
+	if (!qualified_name) goto sql_error;
+	rc = db_exec_args(sqlcb_mat, matrix,
+		"select * from %s order by rowid asc;", qualified_name);
 	if (rc == SQLITE_OK) {
-		IupSetStrAttribute(matrix, "dbname", dbname);
-		IupSetStrAttribute(matrix, "name", name);
+		/* do not make a copy of qualified_name, so remember to free
+		 * the memory later */
+		IupSetAttribute(matrix, "qualified_name", qualified_name);
 		IupSetAttribute(matrix, "pkslot", (char *) pkslot);
 	} else {
 sql_error:
@@ -268,14 +275,18 @@ sql_error:
 void db_end_edit(Ihandle *matrix)
 {
 	sqlite3_int64 *pkslot;
+	char *qualified_name;
 
-	IupSetAttribute(matrix, "dbname", 0);
-	IupSetAttribute(matrix, "name", 0);
 	IupSetInt(matrix, "NUMCOL", 0);
 	IupSetInt(matrix, "NUMLIN", 0);
+
 	pkslot = (sqlite3_int64 *) IupGetAttribute(matrix, "pkslot");
 	IupSetAttribute(matrix, "pkslot", 0);
 	free(pkslot);
+
+	qualified_name = IupGetAttribute(matrix, "qualified_name");
+	IupSetAttribute(matrix, "qualified_name", 0);
+	sqlite3_free(qualified_name);
 }
 
 int db_schema_version(void)
