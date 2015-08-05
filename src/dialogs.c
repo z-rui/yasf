@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "yasf.h"
 
 static
@@ -147,12 +148,33 @@ char *bufcatQ(char **buf, char *p, const char *s)
 	return p;
 }
 
+/* convenient function:
+ * prints arguments in ..., with and without double quotation (equivalent to
+ * "%w" in sqlite3_mprintf) alternatively.
+ * usefult for constructing an SQL statement. */
+static
+char *bufcat2(char **buf, char *p, ...)
+{
+	va_list va;
+	const char *arg;
+	int quote = 0;
+
+	va_start(va, p);
+	while ((arg = va_arg(va, const char *))) {
+		p = (quote) ? bufcatQ(buf, p, arg) : bufcat(buf, p, arg);
+		quote = !quote;
+	}
+	va_end(va);
+	return p;
+}
+
 int cb_createindex_ok(Ihandle *ih)
 {
 	Ihandle *rlist;
 	const char *dbname, *indexname, *tablename, *column;
 	char *buf, *p;
-	int ncol, i, rc = IUP_DEFAULT;
+	int ncol, unique;
+	int i, rc = IUP_DEFAULT;
 
 	dbname = IupGetAttribute(IupGetDialogChild(ih, "dblist"), "VALUESTRING");
 	indexname = IupGetAttribute(IupGetDialogChild(ih, "name"), "VALUE");
@@ -164,26 +186,19 @@ int cb_createindex_ok(Ihandle *ih)
 		return IUP_DEFAULT;
 	}
 
+	unique = IupGetInt(IupGetDialogChild(ih, "unique"), "VALUE");
+
 	p = buf = bufnew(BUFSIZ);
-	p = bufcat(&buf, p, "create ");
-	if (IupGetInt(IupGetDialogChild(ih, "unique"), "VALUE") == 1) {
-		p = bufcat(&buf, p, "unique ");
-	}
-	p = bufcat (&buf, p, "index ");
-	p = bufcatQ(&buf, p, dbname);
-	p = bufcat (&buf, p, ".");
-	p = bufcatQ(&buf, p, indexname);
-	p = bufcat (&buf, p, " on ");
-	p = bufcatQ(&buf, p, tablename);
-	p = bufcat (&buf, p, " (");
+	p = bufcat2(&buf, p,
+		(unique) ? "create unique index " : "create index ",
+		dbname, ".", indexname, " on ", tablename, " (",
+	0);
 
 	rlist = IupGetDialogChild(ih, "rlist");
 	ncol = IupGetInt(rlist, "COUNT");
 	for (i = 1; i <= ncol; i++) {
 		column = IupGetAttributeId(rlist, "", i);
-		p = bufcatQ(&buf, p, column);
-		if (i < ncol)
-			p = bufcat(&buf, p, ", ");
+		p = bufcat2(&buf, p, (i > 1) ? ", " : "", column, 0);
 	}
 	p = bufcat(&buf, p, ");");
 	if (!p) {
@@ -207,11 +222,7 @@ int cb_createtable_ok(Ihandle *ih)
 	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
 
 	p = buf = bufnew(BUFSIZ);
-	p = bufcat (&buf, p, "create table ");
-	p = bufcatQ(&buf, p, dbname);
-	p = bufcat (&buf, p, ".");
-	p = bufcatQ(&buf, p, tablename);
-	p = bufcat (&buf, p, schema);
+	p = bufcat2(&buf, p, "create table ", dbname, ".", tablename, schema, 0);
 	p = bufcat (&buf, p, ";");
 	if (!p) {
 		IupMessage("Error", "Out of memory");
@@ -234,11 +245,7 @@ int cb_createview_ok(Ihandle *ih)
 	schema = IupGetAttribute(IupGetDialogChild(ih, "schema"), "VALUE");
 
 	p = buf = bufnew(BUFSIZ);
-	p = bufcat (&buf, p, "create view ");
-	p = bufcatQ(&buf, p, dbname);
-	p = bufcat (&buf, p, ".");
-	p = bufcatQ(&buf, p, viewname);
-	p = bufcat (&buf, p, " as ");
+	p = bufcat2(&buf, p, "create view ", dbname, ".", viewname, " as ", 0);
 	p = bufcat (&buf, p, schema);
 	p = bufcat (&buf, p, ";");
 	if (!p) {
@@ -406,11 +413,7 @@ int cb_createtrigger_ok(Ihandle *ih)
 	}
 
 	p = buf = bufnew(BUFSIZ);
-	p = bufcat (&buf, p, "create trigger ");
-	p = bufcatQ(&buf, p, dbname);
-	p = bufcat (&buf, p, ".");
-	p = bufcatQ(&buf, p, triggername);
-	p = bufcat (&buf, p, " ");
+	p = bufcat2(&buf, p, "create trigger ", dbname, ".", triggername, " ", 0);
 	trigger_type = IupGetAttribute(IupGetDialogChild(ih, "trigger_type"), "VALUESTRING");
 	assert(trigger_type);
 	p = bufcat (&buf, p, trigger_type);
@@ -422,8 +425,7 @@ int cb_createtrigger_ok(Ihandle *ih)
 		p = bufcat (&buf, p, " of ");
 		p = bufcat (&buf, p, IupGetAttribute(IupGetDialogChild(ih, "updateof"), "VALUE"));
 	}
-	p = bufcat (&buf, p, " on ");
-	p = bufcatQ(&buf, p, tablename);
+	p = bufcat2(&buf, p, " on ", tablename, 0);
 	if (IupGetInt(IupGetDialogChild(ih, "foreachrow"), "VALUE")) {
 		p = bufcat (&buf, p, " for each row");
 	}
