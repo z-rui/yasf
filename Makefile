@@ -53,8 +53,8 @@ util.o: src/util.c
 pragmas.c: src/pragmas.lua
 	lua $<>$@
 
-regcb.c regcb.h: src/regcb.lua
-	lua $< src/*.c
+regcb.c regcb.h: src/regcb.lua src/db.c src/cb.c src/dialogs.c pragmas.c
+	lua $< src/db.c src/cb.c src/dialogs.c pragmas.c
 
 rc.o: src/iup.rc $(MANIFEST)
 	windres $(RCFLAGS) $< -o $@

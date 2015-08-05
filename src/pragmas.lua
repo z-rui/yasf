@@ -155,8 +155,7 @@ print [[
 
 -- cb_edit_pragmas
 print [[
-static
-int cb_pragmas_param(Ihandle *ih, int idx, void *data)
+static int cb_pragmas_param(Ihandle *ih, int idx, void *data)
 {
   if (idx == IUP_GETPARAM_BUTTON3) {
     IupHelp("https://www.sqlite.org/pragma.html");
