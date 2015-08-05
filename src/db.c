@@ -212,7 +212,7 @@ int rowcount(const char *dbname, const char *name)
 }
 
 static
-void fillpkslot(sqlite3_int64 *pkslot, int nrow, const char *dbname, const char *name)
+int fillpkslot(sqlite3_int64 *pkslot, int nrow, const char *dbname, const char *name)
 {
 	char *zSql;
 	sqlite3_stmt *stmt;
@@ -221,7 +221,9 @@ void fillpkslot(sqlite3_int64 *pkslot, int nrow, const char *dbname, const char 
 
 	zSql = sqlite3_mprintf("select rowid from \"%w\".\"%w\" order by rowid asc;",
 		dbname, name);
-	db_prepare(zSql, &stmt);
+	rc = db_prepare(zSql, &stmt);
+	if (rc != SQLITE_OK)
+		return -1;
 	sqlite3_free(zSql);
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
 		assert(n < nrow);
@@ -233,6 +235,7 @@ void fillpkslot(sqlite3_int64 *pkslot, int nrow, const char *dbname, const char 
 	sqlite3_finalize(stmt);
 	assert(n == nrow);
 	pkslot[n] = 0;
+	return n;
 }
 
 void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
@@ -249,13 +252,15 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 		IupMessage("Error", "Out of memory");
 		return;
 	}
-	fillpkslot(pkslot, nrow, dbname, name);
+	if (fillpkslot(pkslot, nrow, dbname, name) != nrow)
+		goto sql_error;
 	rc = db_exec_args(sqlcb_mat, matrix, "select * from \"%w\".\"%w\" order by rowid asc;", dbname, name);
 	if (rc == SQLITE_OK) {
 		IupSetStrAttribute(matrix, "dbname", dbname);
 		IupSetStrAttribute(matrix, "name", name);
 		IupSetAttribute(matrix, "pkslot", (char *) pkslot);
 	} else {
+sql_error:
 		free(pkslot);
 	}
 }
