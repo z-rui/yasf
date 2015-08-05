@@ -62,7 +62,7 @@ dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_ma
   split[ORIENTATION="VERTICAL"](
     ctl_tree = tree[TITLE0="Databases", SIZE="100x", SHOWRENAME="YES", RIGHTCLICK_CB=cb_tree_rightclick, SHOWRENAME_CB=cb_tree_showrename, RENAME_CB=cb_tree_rename](),
     split[ORIENTATION="HORIZONTAL"](
-      ctl_matrix = matrix[NAME="MATVIEW", SIZE="300x150", RESIZEMATRIX="YES", EDITFITVALUE="YES", MULTILINE="YES", EDITION_CB=cb_matrix_edit](cb_matrix),
+      ctl_matrix = matrix[NAME="MATVIEW", SIZE="300x150", RESIZEMATRIX="YES", EDITFITVALUE="YES", MULTILINE="YES", EDITION_CB=cb_matrix_edit, CLICK_CB=cb_matrix_click](cb_matrix),
       frame[TITLE="SQL"](hbox(
         ctl_cmdline,
         vbox(
@@ -73,6 +73,17 @@ dlg_main = dialog[TITLE="Yet Another SQLite Frontend", SHRINK="YES", MENU=mnu_ma
     )
   )
 ))
+
+mnu_matrix = menu(
+  item("Open editor...", cb_matrix_editor),
+  separator(),
+  item("Copy\tCtrl+C", cb_matrix_copy),
+  item("Paste\tCtrl+V", cb_matrix_paste),
+  item("Set to NULL\tDel", cb_matrix_settonull),
+  separator(),
+  item("Export cell...", cb_matrix_exportcell),
+  item("Export table...", cb_matrix_exporttable)
+)
 
 dlg_about = messagedlg[DIALOGTYPE="INFORMATION", TITLE="About"]()
 

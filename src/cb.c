@@ -70,6 +70,18 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 	return IUP_CONTINUE;
 }
 
+int cb_matrix_click(Ihandle *ih, int lin, int col, char *status)
+{
+	if (iup_isbutton3(status)) {	/* right click */
+		Ihandle *menu;
+
+		IupSetStrf(ih, "FOCUS_CELL", "%d:%d", lin, col);
+		menu = IupGetHandle("mnu_matrix");
+		IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
+	}
+	return IUP_DEFAULT;
+}
+
 static
 void fit_cols(Ihandle *matrix)
 {
