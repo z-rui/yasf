@@ -9,11 +9,6 @@
 
 struct {
 	sqlite3 *db; /* current db connection */
-	char *dbname, *tablename; /* info of the table being edited */
-	/* To handle WITHOUT ROWID tables, the name of the primary key
-	 * needs to be stored. 
-	 * TODO Support of WITHOUT ROWID tables is not implemented yet. */
-	/* char *pkname; */
 } glst[1]; /* global state */
 
 static int report(int rc, int fatal)
