@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include "yasf.h"
 
 static
@@ -134,38 +133,6 @@ int cb_createtable_map(Ihandle *ih)
 	update_dblist(dblist);
 	dlg_fitsize(ih);
 	return IUP_DEFAULT;
-}
-
-static
-char *bufcatQ(char **buf, char *p, const char *s)
-{
-	p = bufext(buf, p, escquote(0, s, '"') + 2);
-	if (p) {
-		*p++ = '"';
-		p += escquote(p, s, '"');
-		*p++ = '"';
-	}
-	return p;
-}
-
-/* convenient function:
- * prints arguments in ..., with and without double quotation (equivalent to
- * "%w" in sqlite3_mprintf) alternatively.
- * usefult for constructing an SQL statement. */
-static
-char *bufcat2(char **buf, char *p, ...)
-{
-	va_list va;
-	const char *arg;
-	int quote = 0;
-
-	va_start(va, p);
-	while ((arg = va_arg(va, const char *))) {
-		p = (quote) ? bufcatQ(buf, p, arg) : bufcat(buf, p, arg);
-		quote = !quote;
-	}
-	va_end(va);
-	return p;
 }
 
 static
