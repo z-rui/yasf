@@ -270,46 +270,32 @@ void db_end_edit(Ihandle *matrix)
 	IupSetInt(matrix, "NUMCOL", 0);
 	IupSetInt(matrix, "NUMLIN", 0);
 	pkslot = (sqlite3_int64 *) IupGetAttribute(matrix, "pkslot");
+	IupSetAttribute(matrix, "pkslot", 0);
 	free(pkslot);
 }
 
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
-	/* TODO cannot edit yet, since the primary key is not tracked. */
-#if 0
+	sqlite_int64 *pkslot;
+
+	pkslot = (sqlite3_int64 *) IupGetAttribute(ih, "pkslot");
+#if 1
 	if (mode == 1) { /* enter */
-		return (glst->editing) ? IUP_CONTINUE : IUP_IGNORE;
+		/* if pkslot is set, then it is in editing mode. */
+		return (pkslot) ? IUP_CONTINUE : IUP_IGNORE;
 	} else if (update) { /* leave */
-		Ihandle *ih;
-		const char *colname, *newvalue;
-		const char *pkcol, *pkval;
+		const char *dbname, *name, *colname, *newvalue;
 		int rc;
 
-		assert(glst->name && glst->type && strcmp(glst->type, "table") == 0);
-		ih = IupGetHandle("ctl_matrix");
+		dbname = IupGetAttribute(ih, "dbname");
+		name = IupGetAttribute(ih, "name");
 		colname = IupGetAttributeId2(ih, "", 0, col);
 		newvalue = IupGetAttribute(ih, "VALUE");
-		pkcol = (glst->pk) ? IupGetAttributeId2(ih, "", 0, glst->pk) : "rowid";
-		pkval = IupGetAttributeId2(ih, "", lin, glst->pk);
-		/* XXX pkval might be a huge blob or long string (if table is
-		 * without rowid and use blob/string as the primary key).
-		 * Normally nobody would do this. */
-		/* XXX Values might be a huge blob or long string.
-		 * This is very common, so it's better to use sqlite3_bind_*
-		 * rather than string-based method. */
-		rc = db_exec_args(ih, "update \"%w\".\"%w\" set \"%w\" = %Q where \"%w\" = %Q;",
-			glst->dbname,
-			glst->name,
-			colname,
-			newvalue,
-			pkcol,
-			pkval
+		/* TODO WITHOUT ROWID tables are not supported yet. */
+		rc = db_exec_args(0, 0, "update \"%w\".\"%w\" set \"%w\" = %Q where rowid = %d;",
+			dbname, name, colname, newvalue, pkslot[lin-1]
 		);
-		if (rc == SQLITE_OK) {
-			return IUP_DEFAULT;
-		} else {
-			return IUP_IGNORE;
-		}
+		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
 	}
 	return IUP_CONTINUE;
 #else

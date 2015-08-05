@@ -60,13 +60,6 @@ void fit_cols(Ihandle *matrix)
 #endif
 }
 
-static
-void clear(Ihandle *matrix)
-{
-	IupSetInt(matrix, "NUMLIN", 0);
-	IupSetInt(matrix, "NUMCOL", 0);
-}
-
 int cb_execute(Ihandle *ih)
 {
 	Ihandle *cmdline;
@@ -75,7 +68,7 @@ int cb_execute(Ihandle *ih)
 
 	cmdline = IupGetHandle("ctl_cmdline");
 	s = IupGetAttribute(cmdline, "VALUE");
-	clear(ctl_matrix);
+	db_end_edit(ctl_matrix);
 	schema_version = db_schema_version();
 	db_exec_str(s, sqlcb_mat, (void *) ctl_matrix);
 	fit_cols(ctl_matrix);
@@ -281,11 +274,11 @@ int cb_viewdata(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
-		clear(ctl_matrix);
+		db_end_edit(ctl_matrix);
 		db_begin_edit(ctl_matrix, dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "view") == 0) {
-		clear(ctl_matrix);
+		db_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "select * from \"%w\".\"%w\";",
 			dbname, tablename);
 		fit_cols(ctl_matrix);
@@ -301,12 +294,10 @@ int cb_viewschema(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
-		clear(ctl_matrix);
 		db_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "index") == 0) {
-		clear(ctl_matrix);
 		db_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
