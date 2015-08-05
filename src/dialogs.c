@@ -177,15 +177,19 @@ const char *DialogChildAttribute(Ihandle *ih, const char *name, const char *attr
 static
 int exec_and_free(char *buf, char *p)
 {
+	int rc = IUP_DEFAULT;
+	int schema_version = db_schema_version();
+
 	if (!p) {
 		IupMessage("Error", "Out of memory");
 	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
-		update_treeview(IupGetHandle("ctl_tree"));
-		buffree(buf);
-		return IUP_CLOSE;
+		rc = IUP_CLOSE;
 	}
 	buffree(buf);
-	return IUP_DEFAULT;
+	/* update the tree view only when schema has changed */
+	if (schema_version != db_schema_version())
+		update_treeview(IupGetHandle("ctl_tree"));
+	return rc;
 }
 
 int cb_createindex_ok(Ihandle *ih)

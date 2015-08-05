@@ -71,12 +71,17 @@ int cb_execute(Ihandle *ih)
 {
 	Ihandle *cmdline;
 	const char *s;
+	int schema_version;
 
 	cmdline = IupGetHandle("ctl_cmdline");
 	s = IupGetAttribute(cmdline, "VALUE");
 	clear(ctl_matrix);
+	schema_version = db_schema_version();
 	db_exec_str(s, sqlcb_mat, (void *) ctl_matrix);
 	fit_cols(ctl_matrix);
+	if (schema_version != db_schema_version()) {
+		update_treeview(ctl_tree);
+	}
 	return IUP_DEFAULT;
 }
 

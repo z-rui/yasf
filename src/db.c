@@ -316,3 +316,19 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 	return IUP_IGNORE;
 #endif
 }
+
+int db_schema_version(void)
+{
+	int ver = 0; /* XXX should be an 32-bit integer */
+	sqlite3_stmt *stmt;
+	int rc;
+
+	sqlite3_prepare_v2(glst->db, "pragma schema_version;", -1, &stmt, 0);
+	if ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		ver = sqlite3_column_int(stmt, 0);
+	} else {
+		report(rc, 0);
+	}
+	sqlite3_finalize(stmt);
+	return ver;
+}
