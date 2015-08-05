@@ -121,6 +121,7 @@ int cb_file_open(Ihandle *ih)
 	if (filename) {
 		db_file(filename);
 		update_treeview(ctl_tree);
+		db_end_edit(ctl_matrix);
 	}
 	return IUP_DEFAULT;
 }
@@ -129,6 +130,7 @@ int cb_file_new(Ihandle *ih)
 {
 	db_file(":memory:");
 	update_treeview(ctl_tree);
+	db_end_edit(ctl_matrix);
 	return IUP_DEFAULT;
 }
 
