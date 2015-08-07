@@ -50,16 +50,19 @@ char *bufext(char **base, char *tail, size_t n)
 	return tail = *base + len;
 }
 
+char *bufadd(char **base, char *tail, const char *s, size_t n)
+{
+	if ((tail = bufext(base, tail, n))) {
+		memcpy(tail, s, n);
+		tail += n;
+	}
+	return tail;
+}
+
 char *bufcat(char **base, char *tail, const char *s)
 {
-	size_t slen;
-
-	if (!tail) return 0;
-	slen = strlen(s);
-	tail = bufext(base, tail, slen);
 	if (tail) {
-		memcpy(tail, s, slen);
-		tail += slen;
+		tail = bufadd(base, tail, s, strlen(s));
 	}
 	return tail;
 }
