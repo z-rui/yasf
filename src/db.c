@@ -193,12 +193,7 @@ int get_pk_cid(const char *dbname, const char *tablename)
 static
 char *addpk(char **buf, char *p, sqlite3_int64 pk)
 {
-	p = bufext(buf, p, sizeof (sqlite3_int64));
-	if (p) {
-		*(sqlite3_int64 *) p = pk;
-		p += sizeof (sqlite3_int64);
-	}
-	return p;
+	return bufadd(buf, p, (char *) &pk, sizeof (sqlite3_int64));
 }
 
 static
@@ -232,6 +227,36 @@ fail:
 	return 0;
 }
 
+void db_column_names(void (*cb)(const void *, const char *), void *data, const char *dbname, const char *name)
+{
+	sqlite3_stmt *stmt;
+	int rc;
+	char *zSql;
+
+	zSql = sqlite3_mprintf("pragma \"%w\".table_info(\"%w\");", dbname, name);
+	rc = db_prepare(zSql, &stmt);
+	sqlite3_free(zSql);
+	if (rc != SQLITE_OK) return;
+	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		(*cb)(data, (const char *) sqlite3_column_text(stmt, 1));
+	}
+	sqlite3_finalize(stmt);
+	if (rc != SQLITE_DONE) {
+		report(rc, 0);
+	}
+}
+
+static
+void sqlcb_setcol(const void *data, const char *colname)
+{
+	Ihandle *matrix = (Ihandle *) data;
+	int ncol;
+
+	ncol = IupGetInt(matrix, "NUMCOL");
+	IupSetInt(matrix, "NUMCOL", ++ncol);
+	IupSetStrAttributeId2(matrix, "", 0, ncol, colname);
+}
+
 void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 {
 	int rc;
@@ -243,24 +268,38 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 
 	/* Only tables can be edited. */
 	/* TODO WITHOUT ROWID tables cannot be editted */
-	rc = db_exec_str("begin immediate;", 0, 0);
-	if (rc != SQLITE_OK) goto fail;
-
 	pkslot = getpkslot(qualified_name);
-	if (!pkslot) {
-		IupMessage("Error", "Out of memory");
-		goto fail;
-	}
+	if (!pkslot) goto fail;
+
+	/* first set column names.
+	 * this should not be done implicitly by sqlcb_mat, in order to handle
+	 * empty tables correctly. */
+	db_column_names(sqlcb_setcol, (void *) matrix, dbname, name);
 
 	/* NOTE: change the memory deallocator in db_end_edit if you change
 	 * the memory allocator here. */
 	rc = db_exec_args(sqlcb_mat, matrix,
 		"select * from %s order by rowid asc;", qualified_name);
-	if (rc == SQLITE_OK && db_exec_str("end;", 0, 0) == SQLITE_OK) {
+	if (rc == SQLITE_OK) {
 		/* do not make a copy of qualified_name, so remember to free
 		 * the memory later */
+		int nrow, i;
+
 		IupSetAttribute(matrix, "qualified_name", qualified_name);
 		IupSetAttribute(matrix, "pkslot", (char *) pkslot);
+
+		/* An additional line is appended to the end of the matrix,
+		 * so that the user can easily insert a new record into the
+		 * table. */
+		nrow = IupGetInt(matrix, "NUMLIN");
+		IupSetInt(matrix, "ADDLIN", ++nrow);
+
+		/* Set line number */
+		for (i = 1; i < nrow; i++) {
+			IupSetIntId2(matrix, "", i, 0, i);
+		}
+		IupSetAttributeId2(matrix, "", nrow, 0, "*");
+		//IupSetAttribute(matrix, "FITTOTEXT", "C0");
 	} else {
 fail:
 		sqlite3_free(qualified_name);
