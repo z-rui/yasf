@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include "yasf.h"
+#include "dmodel.h"
 
 struct {
 	sqlite3 *db; /* current db connection */
@@ -190,44 +191,7 @@ int get_pk_cid(const char *dbname, const char *tablename)
 }
 #endif
 
-static
-char *addpk(char **buf, char *p, sqlite3_int64 pk)
-{
-	return bufadd(buf, p, (char *) &pk, sizeof (sqlite3_int64));
-}
-
-static
-void *getpkslot(const char *qualified_name)
-{
-	sqlite3_stmt *stmt;
-	char *buf, *p;
-	char *zSql;
-	int rc;
-
-	p = buf = bufnew(BUFSIZ);
-	zSql = sqlite3_mprintf("select rowid from %s order by rowid asc;",
-		qualified_name);
-	rc = db_prepare(zSql, &stmt);
-	sqlite3_free(zSql);
-	if (!buf || rc != SQLITE_OK) goto fail;
-	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		p = addpk(&buf, p, sqlite3_column_int64(stmt, 0));
-		if (!p) goto fail;
-	}
-	sqlite3_finalize(stmt);
-	if (rc != SQLITE_DONE) {
-		report(rc, 0);
-		goto fail;
-	}
-	p = addpk(&buf, p, 0);
-	if (!p) goto fail;
-	return (void *) buf;
-fail:
-	bufdel(buf);
-	return 0;
-}
-
-void db_column_names(void (*cb)(const void *, const char *, int), void *data, const char *dbname, const char *name)
+void db_column_names(void (*cb)(void *, const char *, int), void *data, const char *dbname, const char *name)
 {
 	sqlite3_stmt *stmt;
 	int rc;
@@ -248,37 +212,23 @@ void db_column_names(void (*cb)(const void *, const char *, int), void *data, co
 
 struct setcol_context {
 	Ihandle *matrix;
-	int haspk;
-	const char *qualified_name;
+	struct dmodel *dmodel;
 	int rowid_id[3];
-	/* ^whether an identifier for referring to the implicit ROWID
-	 * is taken (defined by the user); if so, the program should not
-	 * use that name. */
-	char *cond_buf, *cond_p;
-	/* ^condition in WHERE clause to uniquely detemine the position;
-	 * it is a buffer object. */
 };
 
 static const char *const rowid_ids[3] = {"rowid", "oid", "_rowid_"};
 
 static
-void sqlcb_setcol(const void *data, const char *colname, int ispk)
+void sqlcb_setcol(void *data, const char *colname, int ispk)
 {
-	const struct setcol_context *ctx = (const struct setcol_context *) data;
+	struct setcol_context *ctx = (struct setcol_context *) data;
 	int ncol, i;
 
 	ncol = IupGetInt(ctx->matrix, "NUMCOL");
 	IupSetInt(ctx->matrix, "NUMCOL", ++ncol);
 	IupSetStrAttributeId2(ctx->matrix, "", 0, ncol, colname);
 	if (ispk) {
-		ctx->cond_p = bufcat(ctx->cond_buf, ctx->cond_p,
-			(ctx->haspk) ? " and " : " ");
-		ctx->cond_p = bufcat(ctx->cond_buf, ctx->cond_p,
-			ctx->qualified_name);
-		ctx->cond_p = bufcat2(ctx->cond_buf, ctx->cond_p,
-			".", colname, "=", colname,
-		0);
-		ctx->haspk = 1;
+		dmodel_add_pkcol(ctx->dmodel, colname);
 	}
 	for (i = 0; i < 3; i++) {
 		/* this comparison should be case-insensitive */
@@ -288,58 +238,68 @@ void sqlcb_setcol(const void *data, const char *colname, int ispk)
 	}
 }
 
+static
+int add_pk(struct dmodel *dmodel)
+{
+	sqlite3_stmt *stmt;
+	int rc;
+
+	rc = db_prepare(dmodel->select_sql, &stmt);
+	if (rc != SQLITE_OK) goto fail;
+	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+		sqlite3_value **row;
+		int i;
+
+		row = dmodel_add_entry(dmodel);
+		for (i = 0; i < dmodel->npkcol; i++) {
+			row[i] = sqlite3_value_dup(sqlite3_column_value(stmt, i));
+		}
+	}
+	if (rc != SQLITE_DONE) goto fail;
+	return 1;
+fail:
+	return 0;
+}
+
 void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 {
 	int rc, k;
-	void *pkslot = 0;
 	char *qualified_name = 0;
-	struct setcol_context ctx = {matrix};
+	struct setcol_context ctx = {0};
+	struct dmodel *dmodel;
 
-	ctx->qualified_name = qualified_name = sqlite3_mprintf("\"%w\".\"%w\"", dbname, name);
-	if (!qualified_name) goto fail;
+	ctx.matrix = matrix;
+	qualified_name = sqlite3_mprintf("\"%w\".\"%w\"", dbname, name);
+	if (!qualified_name) return;
+	ctx.dmodel = dmodel = dmodel_new(qualified_name);
+	sqlite3_free(qualified_name);
+	qualified_name = dmodel->qualified_name;
+	if (!dmodel) goto fail;
 
-	/* first set column names.
-	 * this should not be done implicitly by sqlcb_mat, in order to handle
-	 * empty tables correctly. */
-	ctx->cond_buf = ctx->cond_p = bufnew(BUFSIZ); /* XXX free the buffer!! */
 	db_column_names(sqlcb_setcol, (void *) &ctx, dbname, name);
 
-	/* find an appropriate name to refer to the implicit ROWID */
-	for (k = 0; k < 3 && ctx.rowid_id[k]; k++)
-		;
-	if (k == 3) {
-		IupMessage("Error",
-			"All of the column names ROWID, OID and _ROWID_"
-			" has been defined by the user, probably on a "
-			"bad purpose. \nThe program cannot manipulate "
-			"this kind of table.");
-		goto fail;
-	}
-	/* ctx.rowid_id[k] is a static variable */
-	IupSetAttribute(matrix, "rowid_id", ctx.rowid_id[k]);
-
-	if (!ctx.haspk) {	/* the primary key is the implicit ROWID. */
-		pkslot = getpkslot(qualified_name);
-		IupSetAttribute(matrix, "shadow_table", 0);
+	if (dmodel->npkcol == 0) {	/* the primary key is the implicit ROWID. */
+		/* find an appropriate name to refer to the implicit ROWID */
+		for (k = 0; k < 3 && ctx.rowid_id[k]; k++)
+			;
+		if (k == 3) {
+			IupMessage("Error",
+				"All of the column names ROWID, OID and _ROWID_"
+				" has been defined by the user, probably on a "
+				"bad purpose. \nThe program cannot manipulate "
+				"this kind of table.");
+			goto fail;
+		}
+		/* rowid_ids[k] is a static variable */
+		IupSetAttribute(matrix, "rowid_id", rowid_ids[k]);
+		dmodel_add_pkcol(dmodel, rowid_ids[k]);
 	} else {	/* the primary key is explicitly defined. */
-		/* TODO If ROWID is available, making use of ROWID is more
-		 * efficient. But there are some corner cases to consider.
-		 * The safest way to hadle explicitly-defined primary key
-		 * (for ROWID or WTIHOUT ROWID tables) is to create a
-		 * temporary table so that we index the temporary table with
-		 * the rowid that is under our control,
-		 * original table. */
-		rc = db_exec_args(
-			"create temp table __yasf_temp_tbl as select * from %s;",
-			qualified_name);
-		if (rc != SQLITE_OK) goto fail;
-		pkslot = getpkslot("temp.__yasf_temp_tbl");
-		IupSetAttribute(matrix, "shadow_table", "temp.__yasf_temp_tbl");
+		IupSetAttribute(matrix, "rowid_id", 0);
 	}
-	if (!pkslot) goto fail;
+	dmodel_init_sql(dmodel);
+	if (!add_pk(dmodel))
+		goto fail;
 
-	/* NOTE: change the memory deallocator in db_end_edit if you change
-	 * the memory allocator here. */
 	rc = db_exec_args(sqlcb_mat, matrix,
 		"select * from %s order by rowid asc;", qualified_name);
 	if (rc == SQLITE_OK) {
@@ -347,8 +307,7 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 		 * the memory later */
 		int nrow, i;
 
-		IupSetAttribute(matrix, "qualified_name", qualified_name);
-		IupSetAttribute(matrix, "pkslot", (char *) pkslot);
+		IupSetAttribute(matrix, "dmodel", (char *) dmodel);
 
 		/* An additional line is appended to the end of the matrix,
 		 * so that the user can easily insert a new record into the
@@ -364,26 +323,20 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 		//IupSetAttribute(matrix, "FITTOTEXT", "C0");
 	} else {
 fail:
-		sqlite3_free(qualified_name);
-		bufdel((char *) pkslot);
+		dmodel_free(dmodel);
 	}
 }
 
 void db_end_edit(Ihandle *matrix)
 {
-	char *pkslot;
-	char *qualified_name;
+	struct dmodel *dmodel;
 
 	IupSetInt(matrix, "NUMCOL", 0);
 	IupSetInt(matrix, "NUMLIN", 0);
 
-	pkslot = IupGetAttribute(matrix, "pkslot");
-	IupSetAttribute(matrix, "pkslot", 0);
-	bufdel(pkslot);
-
-	qualified_name = IupGetAttribute(matrix, "qualified_name");
-	IupSetAttribute(matrix, "qualified_name", 0);
-	sqlite3_free(qualified_name);
+	dmodel = (struct dmodel *) IupGetAttribute(matrix, "dmodel");
+	IupSetAttribute(matrix, "dmodel", 0);
+	dmodel_free(dmodel);
 }
 
 int db_schema_version(void)

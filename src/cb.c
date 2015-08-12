@@ -76,29 +76,9 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 
 	if (mode == 1) { /* enter */
 		/* if pkslot is set, then it is in editing mode. */
-		if (!pkslot) return IUP_IGNORE;
-		if (is_lastline) {
-			sqlite3_int64 rowid;
-			struct mat_update_context ctx = {ih, lin};
-			char *buf = (char *) pkslot;
-			char *p = buf + lin;
-
-			rc = db_exec_args(0, 0, "insert into %s(rowid) values(NULL);", qualified_name);
-			if (rc != SQLITE_OK) return IUP_IGNORE;
-			rowid = db_last_insert_rowid();
-			rc = db_exec_args(sqlcb_mat_update, (void *) &ctx,
-				"select * from %s where rowid = %lld;",
-				qualified_name, rowid);
-			p = bufadd(&buf, p, (char *) &rowid, sizeof (sqlite3_int64));
-			if (!p) {
-				/* Tricky OOM.
-				 * We can hardly recover from this case. */
-				exit(1);
-			}
-			IupSetAttribute(ih, "pkslot", buf);
-		}
-		return IUP_CONTINUE;
+		return IUP_IGNORE;
 	} else if (update) { /* leave */
+#if 0
 		const char *colname, *newvalue;
 
 		colname = IupGetAttributeId2(ih, "", 0, col);
@@ -108,6 +88,7 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 			qualified_name, colname, newvalue, pkslot[lin-1]
 		);
 		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
+#endif
 	}
 	return IUP_CONTINUE;
 }

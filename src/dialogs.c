@@ -152,7 +152,7 @@ int exec_and_free(char *buf, char *p)
 	} else if (db_exec_str(buf, 0, 0) == SQLITE_OK) {
 		rc = IUP_CLOSE;
 	}
-	buffree(buf);
+	bufdel(buf);
 	/* update the tree view only when schema has changed */
 	if (schema_version != db_schema_version())
 		update_treeview(IupGetHandle("ctl_tree"));

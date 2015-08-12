@@ -3,9 +3,9 @@ CFLAGS=-Og -g -Wall
 
 LEDC=bin/ledc
 
-CFLAGS+=-I.
+CFLAGS+=-I. -Iulbuf -Iwbt
 
-OBJS=main.o led.o stub.o cb.o db.o dialogs.o util.o
+OBJS=main.o led.o stub.o cb.o db.o dialogs.o util.o dmodel.o ulbuf.o wbt.o
 
 ifneq "$(findstring w4, $(TEC_UNAME))" ""
  ifneq "$(findstring 64, $(TEC_UNAME))" ""
@@ -50,6 +50,15 @@ dialogs.o: src/dialogs.c src/yasf.h
 util.o: src/util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+dmodel.o: src/dmodel.c src/dmodel.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+ulbuf.o: ulbuf/ulbuf.c ulbuf/ulbuf.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+wbt.o: wbt/wbt.c wbt/wbt.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 pragmas.c: src/pragmas.lua
 	lua $<>$@
 
@@ -60,4 +69,4 @@ rc.o: src/iup.rc $(MANIFEST)
 	windres $(RCFLAGS) $< -o $@
 
 clean:
-	rm -f *.o led.c pragmas.c regcb.c regcb.h
+	rm -f $(OBJS).c pragmas.c regcb.c regcb.h
