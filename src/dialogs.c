@@ -150,7 +150,7 @@ int exec_and_free(char *buf, char *p)
 	bufdel(buf);
 	/* update the tree view only when schema has changed */
 	if (schema_version != db_schema_version())
-		update_treeview(IupGetHandle("ctl_tree"));
+		ui_update_tree(IupGetHandle("ctl_tree"));
 	return rc;
 }
 

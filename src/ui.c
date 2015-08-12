@@ -5,7 +5,7 @@
 #include "yasf.h"
 #include "dmodel.h"
 
-struct update_treeview_ctx {
+struct ui_update_tree_ctx {
 	Ihandle *tree;
 	int parentid, id;
 };
@@ -49,9 +49,9 @@ int add_detail(Ihandle *tree, int id, const char *dbname)
 }
 
 static
-int sqlcb_update_treeview(void *data, sqlite3_stmt *stmt)
+int sqlcb_ui_update_tree(void *data, sqlite3_stmt *stmt)
 {
-	struct update_treeview_ctx *ctx = (struct update_treeview_ctx *) data;
+	struct ui_update_tree_ctx *ctx = (struct ui_update_tree_ctx *) data;
 	const char *dbname;
 
 	dbname = (const char *) sqlite3_column_text(stmt, 1);
@@ -64,9 +64,9 @@ int sqlcb_update_treeview(void *data, sqlite3_stmt *stmt)
 	return 0;
 }
 
-void update_treeview(Ihandle *tree)
+void ui_update_tree(Ihandle *tree)
 {
-	struct update_treeview_ctx ctx;
+	struct ui_update_tree_ctx ctx;
 	int rc;
 	sqlite3_stmt *stmt;
 
@@ -79,7 +79,7 @@ void update_treeview(Ihandle *tree)
 
 	ctx.tree = tree;
 	ctx.parentid = ctx.id = 0;
-	rc = db_exec_stmt(sqlcb_update_treeview, (void *) &ctx, stmt);
+	rc = db_exec_stmt(sqlcb_ui_update_tree, (void *) &ctx, stmt);
 	sqlite3_finalize(stmt);
 	if (rc != SQLITE_OK) return;
 	/* Sometimes, the pragma does not report there is a 'temp' database
@@ -148,7 +148,7 @@ void add_additional_line(Ihandle *matrix)
 	//IupSetAttribute(matrix, "FITTOTEXT", "C0");
 }
 
-void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
+void ui_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 {
 	int rc, k;
 	char *qualified_name = 0;
@@ -206,7 +206,7 @@ fail:
 	dmodel_free(dmodel);
 }
 
-void db_end_edit(Ihandle *matrix)
+void ui_end_edit(Ihandle *matrix)
 {
 	struct dmodel *dmodel;
 

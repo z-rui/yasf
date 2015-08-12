@@ -124,12 +124,12 @@ int cb_execute(Ihandle *ih)
 
 	cmdline = IupGetHandle("ctl_cmdline");
 	s = IupGetAttribute(cmdline, "VALUE");
-	db_end_edit(ctl_matrix);
+	ui_end_edit(ctl_matrix);
 	schema_version = db_schema_version();
 	db_exec_str(s, sqlcb_mat, (void *) ctl_matrix);
 	fit_cols(ctl_matrix);
 	if (schema_version != db_schema_version()) {
-		update_treeview(ctl_tree);
+		ui_update_tree(ctl_tree);
 	}
 	return IUP_DEFAULT;
 }
@@ -176,8 +176,8 @@ int cb_file_open(Ihandle *ih)
 	filename = get_file();
 	if (filename) {
 		db_file(filename);
-		update_treeview(ctl_tree);
-		db_end_edit(ctl_matrix);
+		ui_update_tree(ctl_tree);
+		ui_end_edit(ctl_matrix);
 	}
 	return IUP_DEFAULT;
 }
@@ -185,8 +185,8 @@ int cb_file_open(Ihandle *ih)
 int cb_file_new(Ihandle *ih)
 {
 	db_file(":memory:");
-	update_treeview(ctl_tree);
-	db_end_edit(ctl_matrix);
+	ui_update_tree(ctl_tree);
+	ui_end_edit(ctl_matrix);
 	return IUP_DEFAULT;
 }
 
@@ -206,7 +206,7 @@ int cb_file_attach(Ihandle *ih)
 		if (rc) {
 			rc = db_exec_args(0, 0, "attach %Q as \"%w\";", filename, dbname);
 			if (rc == SQLITE_OK)
-				update_treeview(ctl_tree);
+				ui_update_tree(ctl_tree);
 		}
 	}
 	return IUP_DEFAULT;
@@ -270,7 +270,7 @@ int cb_file_detach(Ihandle *ih)
 	if (dbname) {
 		int rc = db_exec_args(0, 0, "detach \"%w\";", dbname);
 		if (rc == SQLITE_OK)
-			update_treeview(ctl_tree);
+			ui_update_tree(ctl_tree);
 	}
 	return IUP_DEFAULT;
 }
@@ -332,11 +332,11 @@ int cb_viewdata(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
-		db_end_edit(ctl_matrix);
-		db_begin_edit(ctl_matrix, dbname, tablename);
+		ui_end_edit(ctl_matrix);
+		ui_begin_edit(ctl_matrix, dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "view") == 0) {
-		db_end_edit(ctl_matrix);
+		ui_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "select * from \"%w\".\"%w\";",
 			dbname, tablename);
 		fit_cols(ctl_matrix);
@@ -352,11 +352,11 @@ int cb_viewschema(Ihandle *ih)
 
 	get_node_info(&dbname, &type, &tablename);
 	if (strcmp(type, "table") == 0) {
-		db_end_edit(ctl_matrix);
+		ui_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".table_info(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "index") == 0) {
-		db_end_edit(ctl_matrix);
+		ui_end_edit(ctl_matrix);
 		db_exec_args(sqlcb_mat, ctl_matrix, "pragma \"%w\".index_xinfo(\"%w\");", dbname, tablename);
 		fit_cols(ctl_matrix);
 	} else if (strcmp(type, "view") == 0) {
@@ -419,7 +419,7 @@ int cb_drop(Ihandle *ih)
 	bufdel(buf);
 	if (rc == 1) {
 		rc = db_exec_args(0, 0, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
-		update_treeview(ctl_tree);
+		ui_update_tree(ctl_tree);
 	}
 	return IUP_DEFAULT;
 }

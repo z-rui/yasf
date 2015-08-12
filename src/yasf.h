@@ -20,9 +20,9 @@ extern void db_column_names(void (*)(void *, const char *, int), void *, const c
 extern int sqlcb_mat(void *, int, char **, char **);
 
 /* in ui.c */
-extern void update_treeview(Ihandle *);
-extern void db_begin_edit(Ihandle *, const char *, const char *);
-extern void db_end_edit(Ihandle *);
+extern void ui_update_tree(Ihandle *);
+extern void ui_begin_edit(Ihandle *, const char *, const char *);
+extern void ui_end_edit(Ihandle *);
 
 /* in util.c */
 #include <stddef.h>	/* for size_t */
