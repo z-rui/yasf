@@ -7,13 +7,11 @@
 #include "yasf.h"
 
 static
-int sqlcb_columnlist(void *data, int cols, char **val, char **title)
+void sqlcb_columnlist(void *data, const char *col, int ispk)
 {
 	Ihandle *tablelist = (Ihandle *) data;
 
-	assert(cols == 6);
-	IupSetStrAttribute(tablelist, "APPENDITEM", val[1]);
-	return 0;
+	IupSetStrAttribute(tablelist, "APPENDITEM", col);
 }
 
 static
@@ -37,10 +35,7 @@ int cb_update_columns(Ihandle *ih, char *text, int item, int state)
 	llist = IupGetDialogChild(ih, "llist");
 	if (state == 1) {
 		clear_columns(ih);
-		db_exec_args(sqlcb_columnlist, (void *) llist,
-			"pragma \"%w\".table_info(\"%w\");",
-			dbname, text
-		);
+		db_column_names(sqlcb_columnlist, (void *) llist, dbname, text);
 	}
 	return IUP_DEFAULT;
 }
