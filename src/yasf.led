@@ -81,6 +81,9 @@ mnu_matrix = menu(
   item("Paste\tCtrl+V", cb_matrix_paste),
   item("Set to NULL\tDel", cb_matrix_settonull),
   separator(),
+  item("Insert record", cb_matrix_addrecord),
+  item("Delete record\tCtrl+Del", cb_matrix_delrecord),
+  separator(),
   item("Export cell...", cb_matrix_exportcell),
   item("Export table...", cb_matrix_exporttable)
 )

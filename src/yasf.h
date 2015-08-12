@@ -2,6 +2,7 @@
 
 /* in db.c */
 #include <sqlite3.h>	/* for sqlite3_stmt */
+#include <iup.h>	/* for Ihandle */
 extern void db_init(void);
 extern void db_file(const char *);
 extern void db_finalize(void);
@@ -15,6 +16,7 @@ extern void db_end_edit(Ihandle *);
 extern void db_begin_edit(Ihandle *, const char *, const char *);
 extern int db_prepare(const char *, sqlite3_stmt **);
 extern int db_schema_version(void);
+extern sqlite3_int64 db_last_insert_rowid(void);
 
 /* in cb.c */
 extern int sqlcb_mat(void *, int, char **, char **);

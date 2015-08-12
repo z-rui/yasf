@@ -227,7 +227,7 @@ fail:
 	return 0;
 }
 
-void db_column_names(void (*cb)(const void *, const char *), void *data, const char *dbname, const char *name)
+void db_column_names(void (*cb)(const void *, const char *, int), void *data, const char *dbname, const char *name)
 {
 	sqlite3_stmt *stmt;
 	int rc;
@@ -238,7 +238,7 @@ void db_column_names(void (*cb)(const void *, const char *), void *data, const c
 	sqlite3_free(zSql);
 	if (rc != SQLITE_OK) return;
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		(*cb)(data, (const char *) sqlite3_column_text(stmt, 1));
+		(*cb)(data, (const char *) sqlite3_column_text(stmt, 1), sqlite3_column_int(stmt, 5));
 	}
 	sqlite3_finalize(stmt);
 	if (rc != SQLITE_DONE) {
@@ -246,35 +246,97 @@ void db_column_names(void (*cb)(const void *, const char *), void *data, const c
 	}
 }
 
-static
-void sqlcb_setcol(const void *data, const char *colname)
-{
-	Ihandle *matrix = (Ihandle *) data;
-	int ncol;
+struct setcol_context {
+	Ihandle *matrix;
+	int haspk;
+	const char *qualified_name;
+	int rowid_id[3];
+	/* ^whether an identifier for referring to the implicit ROWID
+	 * is taken (defined by the user); if so, the program should not
+	 * use that name. */
+	char *cond_buf, *cond_p;
+	/* ^condition in WHERE clause to uniquely detemine the position;
+	 * it is a buffer object. */
+}
 
-	ncol = IupGetInt(matrix, "NUMCOL");
-	IupSetInt(matrix, "NUMCOL", ++ncol);
-	IupSetStrAttributeId2(matrix, "", 0, ncol, colname);
+static const char *const rowid_ids[3] = {"rowid", "oid", "_rowid_"};
+
+static
+void sqlcb_setcol(const void *data, const char *colname, int ispk)
+{
+	const struct setcol_context *ctx = (const struct setcol_context *) data;
+	int ncol, i;
+
+	ncol = IupGetInt(ctx->matrix, "NUMCOL");
+	IupSetInt(ctx->matrix, "NUMCOL", ++ncol);
+	IupSetStrAttributeId2(ctx->matrix, "", 0, ncol, colname);
+	if (ispk) {
+		ctx->cond_p = bufcat(ctx->cond_buf, ctx->cond_p,
+			(ctx->haspk) ? " and " : " ");
+		ctx->cond_p = bufcat(ctx->cond_buf, ctx->cond_p,
+			ctx->qualified_name);
+		ctx->cond_p = bufcat2(ctx->cond_buf, ctx->cond_p,
+			".", colname, "=", colname,
+		0);
+		ctx->haspk = 1;
+	}
+	for (i = 0; i < 3; i++) {
+		/* this comparison should be case-insensitive */
+		if (sqlite3_stricmp(colname, rowid_ids[i]) == 0) {
+			ctx->rowid_id[i] = 1;
+		}
+	}
 }
 
 void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 {
-	int rc;
+	int rc, k;
 	void *pkslot = 0;
-	char *qualified_name;
+	char *qualified_name = 0;
+	struct setcol_context ctx = {matrix};
 
-	qualified_name = sqlite3_mprintf("\"%w\".\"%w\"", dbname, name);
+	ctx->qualified_name = qualified_name = sqlite3_mprintf("\"%w\".\"%w\"", dbname, name);
 	if (!qualified_name) goto fail;
-
-	/* Only tables can be edited. */
-	/* TODO WITHOUT ROWID tables cannot be editted */
-	pkslot = getpkslot(qualified_name);
-	if (!pkslot) goto fail;
 
 	/* first set column names.
 	 * this should not be done implicitly by sqlcb_mat, in order to handle
 	 * empty tables correctly. */
-	db_column_names(sqlcb_setcol, (void *) matrix, dbname, name);
+	ctx->cond_buf = ctx->cond_p = bufnew(BUFSIZ); /* XXX free the buffer!! */
+	db_column_names(sqlcb_setcol, (void *) &ctx, dbname, name);
+
+	/* find an appropriate name to refer to the implicit ROWID */
+	for (k = 0; k < 3 && ctx.rowid_id[k]; k++)
+		;
+	if (k == 3) {
+		IupMessage("Error",
+			"All of the column names ROWID, OID and _ROWID_"
+			" has been defined by the user, probably on a "
+			"bad purpose. \nThe program cannot manipulate "
+			"this kind of table.");
+		goto fail;
+	}
+	/* ctx.rowid_id[k] is a static variable */
+	IupSetAttribute(matrix, "rowid_id", ctx.rowid_id[k]);
+
+	if (!ctx.haspk) {	/* the primary key is the implicit ROWID. */
+		pkslot = getpkslot(qualified_name);
+		IupSetAttribute(matrix, "shadow_table", 0);
+	} else {	/* the primary key is explicitly defined. */
+		/* TODO If ROWID is available, making use of ROWID is more
+		 * efficient. But there are some corner cases to consider.
+		 * The safest way to hadle explicitly-defined primary key
+		 * (for ROWID or WTIHOUT ROWID tables) is to create a
+		 * temporary table so that we index the temporary table with
+		 * the rowid that is under our control,
+		 * original table. */
+		rc = db_exec_args(
+			"create temp table __yasf_temp_tbl as select * from %s;",
+			qualified_name);
+		if (rc != SQLITE_OK) goto fail;
+		pkslot = getpkslot("temp.__yasf_temp_tbl");
+		IupSetAttribute(matrix, "shadow_table", "temp.__yasf_temp_tbl");
+	}
+	if (!pkslot) goto fail;
 
 	/* NOTE: change the memory deallocator in db_end_edit if you change
 	 * the memory allocator here. */
@@ -338,4 +400,9 @@ int db_schema_version(void)
 	}
 	sqlite3_finalize(stmt);
 	return ver;
+}
+
+sqlite3_int64 db_last_insert_rowid(void)
+{
+	return sqlite3_last_insert_rowid(glst->db);
 }

@@ -45,19 +45,61 @@ int sqlcb_mat(void *data, int cols, char **val, char **title)
 	return 0;
 }
 
+struct mat_update_context {
+	Ihandle *matrix;
+	int lin;
+};
+
+int sqlcb_mat_update(void *data, int ncol, char **val, char **title)
+{
+	const struct mat_update_context *ctx;
+	int i;
+
+	ctx = (const struct mat_update_context *) data;
+	for (i = 0; i < ncol; i++) {
+		IupSetStrAttributeId2(ctx->matrix, "", ctx->lin, i+1, val[i]);
+	}
+	return 0;
+}
+
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
-	sqlite_int64 *pkslot;
+	sqlite3_int64 *pkslot;
+	int is_lastline;
+	const char *qualified_name;
+	int rc;
 
 	pkslot = (sqlite3_int64 *) IupGetAttribute(ih, "pkslot");
+	is_lastline = (lin == IupGetInt(ih, "NUMLIN"));
+	qualified_name = IupGetAttribute(ih, "qualified_name");
+
 	if (mode == 1) { /* enter */
 		/* if pkslot is set, then it is in editing mode. */
-		return (pkslot) ? IUP_CONTINUE : IUP_IGNORE;
-	} else if (update) { /* leave */
-		const char *qualified_name, *colname, *newvalue;
-		int rc;
+		if (!pkslot) return IUP_IGNORE;
+		if (is_lastline) {
+			sqlite3_int64 rowid;
+			struct mat_update_context ctx = {ih, lin};
+			char *buf = (char *) pkslot;
+			char *p = buf + lin;
 
-		qualified_name = IupGetAttribute(ih, "qualified_name");
+			rc = db_exec_args(0, 0, "insert into %s(rowid) values(NULL);", qualified_name);
+			if (rc != SQLITE_OK) return IUP_IGNORE;
+			rowid = db_last_insert_rowid();
+			rc = db_exec_args(sqlcb_mat_update, (void *) &ctx,
+				"select * from %s where rowid = %lld;",
+				qualified_name, rowid);
+			p = bufadd(&buf, p, (char *) &rowid, sizeof (sqlite3_int64));
+			if (!p) {
+				/* Tricky OOM.
+				 * We can hardly recover from this case. */
+				exit(1);
+			}
+			IupSetAttribute(ih, "pkslot", buf);
+		}
+		return IUP_CONTINUE;
+	} else if (update) { /* leave */
+		const char *colname, *newvalue;
+
 		colname = IupGetAttributeId2(ih, "", 0, col);
 		newvalue = IupGetAttribute(ih, "VALUE");
 		/* TODO WITHOUT ROWID tables are not supported yet. */
