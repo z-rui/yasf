@@ -223,7 +223,7 @@ void *getpkslot(const char *qualified_name)
 	if (!p) goto fail;
 	return (void *) buf;
 fail:
-	buffree(buf);
+	bufdel(buf);
 	return 0;
 }
 
@@ -257,7 +257,7 @@ struct setcol_context {
 	char *cond_buf, *cond_p;
 	/* ^condition in WHERE clause to uniquely detemine the position;
 	 * it is a buffer object. */
-}
+};
 
 static const char *const rowid_ids[3] = {"rowid", "oid", "_rowid_"};
 
@@ -365,7 +365,7 @@ void db_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 	} else {
 fail:
 		sqlite3_free(qualified_name);
-		buffree((char *) pkslot);
+		bufdel((char *) pkslot);
 	}
 }
 
@@ -379,7 +379,7 @@ void db_end_edit(Ihandle *matrix)
 
 	pkslot = IupGetAttribute(matrix, "pkslot");
 	IupSetAttribute(matrix, "pkslot", 0);
-	buffree(pkslot);
+	bufdel(pkslot);
 
 	qualified_name = IupGetAttribute(matrix, "qualified_name");
 	IupSetAttribute(matrix, "qualified_name", 0);

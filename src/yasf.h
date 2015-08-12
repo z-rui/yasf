@@ -23,10 +23,8 @@ extern int sqlcb_mat(void *, int, char **, char **);
 
 /* in util.c */
 #include <stddef.h>	/* for size_t */
-extern char *bufnew(size_t);
-extern char *bufext(char **, char *, size_t);
-extern char *bufadd(char **, char *, const char *, size_t);
-extern char *bufcat(char **, char *, const char *);
-extern char *bufcat2(char **, char *p, ...);
-extern void buffree(char *);
+#include "ulbuf.h"	/* for bufncat */
 extern size_t escquote(char *, const char *, int);
+#define bufcat0(buf, p, s) bufncat(buf, p, sizeof s - 1)
+char *bufcat1(char **, char *, const char *);
+char *bufcat2(char **, char *, ...);

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 
+
 int cb_file_new(Ihandle *ih);
 
 static Ihandle *ctl_tree, *ctl_matrix;
@@ -438,7 +439,7 @@ int cb_drop(Ihandle *ih)
 		rc = IupAlarm2("Drop", buf, "YESNO");
 	}
 	assert(rc == 1 || rc == 2);
-	buffree(buf);
+	bufdel(buf);
 	if (rc == 1) {
 		rc = db_exec_args(0, 0, "drop %s \"%w\".\"%w\"", type, dbname, tablename);
 		update_treeview(ctl_tree);
