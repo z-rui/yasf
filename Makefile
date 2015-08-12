@@ -5,7 +5,7 @@ LEDC=bin/ledc
 
 CFLAGS+=-I. -Iulbuf -Iwbt
 
-OBJS=main.o led.o stub.o cb.o db.o dialogs.o util.o dmodel.o ulbuf.o wbt.o
+OBJS=main.o led.o stub.o cb.o db.o ui.o dialogs.o util.o dmodel.o ulbuf.o wbt.o
 
 ifneq "$(findstring w4, $(TEC_UNAME))" ""
  ifneq "$(findstring 64, $(TEC_UNAME))" ""
@@ -44,13 +44,16 @@ cb.o: src/cb.c src/yasf.h
 db.o: src/db.c pragmas.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+ui.o: src/ui.c src/yasf.h src/dmodel.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 dialogs.o: src/dialogs.c src/yasf.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 util.o: src/util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-dmodel.o: src/dmodel.c src/dmodel.h
+dmodel.o: src/dmodel.c src/dmodel.h wbt/wbt.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 ulbuf.o: ulbuf/ulbuf.c ulbuf/ulbuf.h

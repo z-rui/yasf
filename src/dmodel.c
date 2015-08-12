@@ -133,8 +133,16 @@ void dmodel_free(struct dmodel *d)
 	struct wbt_node *root;
 
 	if (!d) return;
+
 	free(d->qualified_name);
 	
+	/* clear generated SQL's */
+	bufdel(d->select_sql);
+	bufdel(d->insert_sql);
+	bufdel(d->delete_sql);
+	bufdel(d->update_sql);
+
+	/* clear PK columns names */
 	for (i = 0; i < d->npkcol; i++)
 		free(d->pkcolname[i]);
 	free(d->pkcolname);

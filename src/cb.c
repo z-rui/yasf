@@ -65,14 +65,10 @@ int sqlcb_mat_update(void *data, int ncol, char **val, char **title)
 
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
-	sqlite3_int64 *pkslot;
 	int is_lastline;
-	const char *qualified_name;
 	int rc;
 
-	pkslot = (sqlite3_int64 *) IupGetAttribute(ih, "pkslot");
 	is_lastline = (lin == IupGetInt(ih, "NUMLIN"));
-	qualified_name = IupGetAttribute(ih, "qualified_name");
 
 	if (mode == 1) { /* enter */
 		/* if pkslot is set, then it is in editing mode. */
