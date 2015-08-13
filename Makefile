@@ -47,13 +47,13 @@ db.o: src/db.c pragmas.c src/yasf.h
 ui.o: src/ui.c src/yasf.h src/dmodel.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-dialogs.o: src/dialogs.c src/yasf.h
+dialogs.o: src/dialogs.c src/yasf.h src/dmodel.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 util.o: src/util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-dmodel.o: src/dmodel.c src/dmodel.h wbt/wbt.h
+dmodel.o: src/dmodel.c src/dmodel.h src/yasf.h wbt/wbt.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 ulbuf.o: ulbuf/ulbuf.c ulbuf/ulbuf.h

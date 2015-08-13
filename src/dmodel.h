@@ -13,7 +13,7 @@ struct dmodel {
 	 * I believe that in most situations, npkcol == 1 and the PK column is ROWID.
 	 */
 	char **pkcolname;	/* OWNER: names of PK columns, each being quoted. */
-	char *select_sql, *insert_sql, *delete_sql, *update_sql;
+	char *select_sql, *select_pk_sql, *insert_sql, *delete_sql, *update_sql;
 	size_t current_key;
 	struct wbt_root entries[1];
 };

@@ -21,7 +21,8 @@ struct dmodel *dmodel_new(const char *qualified_name)
 
 	d = malloc(sizeof *d);
 	d->qualified_name = strdup(qualified_name);
-	d->select_sql = d->insert_sql = d->delete_sql = d->update_sql = 0;
+	d->select_sql = d->select_pk_sql = d->insert_sql = d->delete_sql
+		= d->update_sql = 0;
 	d->npkcol = 0;
 	d->pkcolname = 0;
 	d->current_key = 0;
@@ -46,23 +47,25 @@ void dmodel_add_pkcol(struct dmodel *d, const char *pkname)
 
 void dmodel_init_sql(struct dmodel *d)
 {
-	char *where_cl, *select_sql, *insert_sql, *delete_sql, *update_sql;
+	char *where_cl;
+	char *select_sql, *select_pk_sql, *insert_sql, *delete_sql, *update_sql;
 	char *p;
 	int i;
 	size_t where_cl_len;
 
-	where_cl = select_sql = insert_sql = delete_sql = update_sql = 0;
+	where_cl = 0;
+	select_sql = select_pk_sql = insert_sql = delete_sql = update_sql = 0;
 
-	p = select_sql = bufnew(BUFSIZ);
-	p = bufcat(&select_sql, p, "select");
+	p = select_pk_sql = bufnew(BUFSIZ);
+	p = bufcat(&select_pk_sql, p, "select");
 	for (i = 0; i < d->npkcol; i++) {
-		p = bufcat2(&select_sql, p,
+		p = bufcat2(&select_pk_sql, p,
 			(i == 0) ? " " : ", ",
 			d->pkcolname[i],
 			" from ", 0);
-		p = bufcat(&select_sql, p, d->qualified_name);
+		p = bufcat(&select_pk_sql, p, d->qualified_name);
 	}
-	p = bufcat(&select_sql, p, ";");
+	p = bufcat(&select_pk_sql, p, ";");
 	if (!p) goto fail;
 
 	p = insert_sql = bufnew(BUFSIZ);
@@ -88,8 +91,14 @@ void dmodel_init_sql(struct dmodel *d)
 	}
 	p = bufcat(&where_cl, p, ";");
 	if (!p) goto fail;
-
 	where_cl_len = (size_t) (p - where_cl);
+
+	p = select_sql = bufnew(BUFSIZ);
+	p = bufcat(&select_sql, p, "select \"%w\" from ");
+	p = bufcat(&select_sql, p, d->qualified_name);
+	p = bufncat(&select_sql, p, where_cl, where_cl_len);
+	if (!p) goto fail;
+
 	p = delete_sql = bufnew(BUFSIZ);
 	p = bufcat(&delete_sql, p, "delete from ");
 	p = bufcat(&delete_sql, p, d->qualified_name);
@@ -105,6 +114,7 @@ void dmodel_init_sql(struct dmodel *d)
 
 	bufdel(where_cl);
 	d->select_sql = select_sql;
+	d->select_pk_sql = select_pk_sql;
 	d->insert_sql = insert_sql;
 	d->delete_sql = delete_sql;
 	d->update_sql = update_sql;
@@ -112,6 +122,7 @@ void dmodel_init_sql(struct dmodel *d)
 fail:
 	bufdel(where_cl);
 	bufdel(select_sql);
+	bufdel(select_pk_sql);
 	bufdel(insert_sql);
 	bufdel(delete_sql);
 	bufdel(update_sql);
@@ -138,6 +149,7 @@ void dmodel_free(struct dmodel *d)
 	
 	/* clear generated SQL's */
 	bufdel(d->select_sql);
+	bufdel(d->select_pk_sql);
 	bufdel(d->insert_sql);
 	bufdel(d->delete_sql);
 	bufdel(d->update_sql);

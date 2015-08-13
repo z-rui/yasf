@@ -189,7 +189,7 @@ void ui_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 	dmodel_init_sql(dmodel);
 
 	/* get values in PK columns */
-	rc = db_prepare(dmodel->select_sql, &stmt);
+	rc = db_prepare(dmodel->select_pk_sql, &stmt);
 	if (rc != SQLITE_OK) goto fail;
 	rc = db_exec_stmt(sqlcb_addpk, (void *) dmodel, stmt);
 	sqlite3_finalize(stmt);
