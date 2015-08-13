@@ -64,6 +64,56 @@ int sqlcb_mat_update(void *data, int ncol, char **val, char **title)
 	return 0;
 }
 
+static
+int sqlcb_update_value(void *data, sqlite3_stmt *stmt)
+{
+	sqlite3_value **val = (sqlite3_value **) data;
+
+	sqlite3_value_free(*val);
+	*val = sqlite3_value_dup(sqlite3_column_value(stmt, 0));
+	return 0;
+}
+
+static
+int update_value(struct dmodel *dmodel, int idx, const char *colname, const char *newvalue)
+{
+	sqlite3_stmt *stmt;
+	sqlite3_value **pk;
+	int i, rc, pk_idx = -1;
+	char *zSql;
+
+	zSql = sqlite3_mprintf(dmodel->update_sql, colname);
+	rc = db_prepare(zSql, &stmt);
+	sqlite3_free(zSql);
+	if (rc != SQLITE_OK) goto fail;
+
+	sqlite3_bind_text(stmt, 1, newvalue, -1, SQLITE_STATIC);
+	/* XXX check range */
+	pk = dmodel_get_entry(dmodel, idx);
+	for (i = 0; i < dmodel->npkcol; i++) {
+		sqlite3_bind_value(stmt, 2+i, pk[i]);
+		if (strcmp(colname, dmodel->pkcolname[i]) == 0)
+			pk_idx = i;
+	}
+	rc = db_exec_stmt(0, 0, stmt);
+	sqlite3_finalize(stmt);
+	if (rc != SQLITE_OK) goto fail;
+	if (pk_idx >= 0) {
+		/* modifying a PK col needs more work */
+		zSql = sqlite3_mprintf(dmodel->select_sql, colname);
+		db_prepare(zSql, &stmt);
+		sqlite3_free(zSql);
+		for (i = 0; i < dmodel->npkcol; i++) {
+			sqlite3_bind_value(stmt, 1+i, pk[i]);
+		}
+		sqlite3_bind_text(stmt, 1+pk_idx, newvalue, -1, SQLITE_STATIC);
+		db_exec_stmt(sqlcb_update_value, &pk[pk_idx], stmt);
+		sqlite3_finalize(stmt);
+	}
+fail:
+	return rc;
+}
+
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
 	struct dmodel *dmodel;
@@ -83,42 +133,17 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 			return IUP_CONTINUE;
 		}
 	} else if (update) { /* leave */
-		const char *colname, *newvalue;
-		sqlite3_stmt *stmt;
-		sqlite3_value **pk;
-		int i, ispk = 0;
-		char *zSql;
-
-		colname = IupGetAttributeId2(ih, "", 0, col);
-		newvalue = IupGetAttribute(ih, "VALUE");
-
-		zSql = sqlite3_mprintf(dmodel->update_sql, colname);
-		if (!zSql) goto fail;
-		rc = db_prepare(zSql, &stmt);
-		sqlite3_free(zSql);
-		if (rc != SQLITE_OK) goto fail;
-
-		sqlite3_bind_text(stmt, 1, newvalue, -1, SQLITE_STATIC);
-		/* XXX check range */
-		pk = dmodel_get_entry(dmodel, lin-1);
-		for (i = 0; i < dmodel->npkcol; i++) {
-			sqlite3_bind_value(stmt, 2+i, pk[i]);
-			if (strcmp(colname, dmodel->pkcolname[i]) == 0)
-				ispk = 1;
-		}
-		if (ispk) {
-			/* TODO: modifying a PK col needs more work */
-			IupMessage("Not Implemented",
-				"Modifying the primary key is not implemented "
-				"yet.");
-			sqlite3_finalize(stmt);
+		if (is_lastline) {
+			/* TODO: handle insert */
 			return IUP_IGNORE;
 		} else {
-			rc = db_exec_stmt(0, 0, stmt);
+			const char *colname = IupGetAttributeId2(ih, "", 0, col);
+			const char *newvalue = IupGetAttribute(ih, "VALUE");
+
+			rc = update_value(dmodel, lin-1, colname, newvalue);
+			if (rc != SQLITE_OK) goto fail;
+			return IUP_DEFAULT;
 		}
-		sqlite3_finalize(stmt);
-		if (rc != SQLITE_OK) goto fail;
-		return IUP_DEFAULT;
 	}
 	return IUP_CONTINUE;
 fail:
