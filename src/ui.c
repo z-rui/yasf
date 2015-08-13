@@ -108,7 +108,7 @@ void sqlcb_setcol(void *data, const char *colname, int ispk)
 	IupSetInt(ctx->matrix, "NUMCOL", ++ncol);
 	IupSetStrAttributeId2(ctx->matrix, "", 0, ncol, colname);
 	if (ispk) {
-		dmodel_add_pkcol(ctx->dmodel, colname);
+		dmodel_add_col(ctx->dmodel, colname, ispk);
 	}
 	for (i = 0; i < 3; i++) {
 		/* this comparison should be case-insensitive */
@@ -182,7 +182,7 @@ void ui_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 		}
 		/* rowid_ids[k] is a static variable */
 		IupSetAttribute(matrix, "rowid_id", rowid_ids[k]);
-		dmodel_add_pkcol(dmodel, rowid_ids[k]);
+		dmodel_add_col(dmodel, rowid_ids[k], 1);
 	} else {	/* the primary key is explicitly defined. */
 		IupSetAttribute(matrix, "rowid_id", 0);
 	}

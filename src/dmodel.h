@@ -4,6 +4,7 @@
 
 struct dmodel {
 	char *qualified_name;	/* OWNER: "database"."table" */
+	int ncol;	/* number of columns */
 	int npkcol;	/* number of PK columns */
 	/* NOTE: npkcol should be reasonably small.
 	 * SQLite3 itself uses some O(N^2) algorithms where N stands for npkcol here.
@@ -19,7 +20,7 @@ struct dmodel {
 };
 
 extern struct dmodel *dmodel_new(const char *);
-extern void dmodel_add_pkcol(struct dmodel *, const char *);
+extern void dmodel_add_col(struct dmodel *, const char *, int);
 extern void dmodel_init_sql(struct dmodel *);
 extern void dmodel_free(struct dmodel *);
 

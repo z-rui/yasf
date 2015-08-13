@@ -23,26 +23,27 @@ struct dmodel *dmodel_new(const char *qualified_name)
 	d->qualified_name = strdup(qualified_name);
 	d->select_sql = d->select_pk_sql = d->insert_sql = d->delete_sql
 		= d->update_sql = 0;
-	d->npkcol = 0;
+	d->ncol = d->npkcol = 0;
 	d->pkcolname = 0;
 	d->current_key = 0;
 	d->entries->root = 0;
 	return d;
 }
 
-void dmodel_add_pkcol(struct dmodel *d, const char *pkname)
+void dmodel_add_col(struct dmodel *d, const char *pkname, int ispk)
 {
-	int npkcol;
-
-	npkcol = ++d->npkcol;
+	++d->ncol;
+	if (ispk) {
+		int npkcol = ++d->npkcol;
 #if 0	/* O(N) algorithm */
-	if ((npkcol & (npkcol - 1)) == 0)
-		d->pkcolname = realloc(d->pkcolname,
-			npkcol * 2 * sizeof (char *));
+		if ((npkcol & (npkcol - 1)) == 0)
+			d->pkcolname = realloc(d->pkcolname,
+				npkcol * 2 * sizeof (char *));
 #else	/* O(N^2) algorithm */
-	d->pkcolname = realloc(d->pkcolname, npkcol * sizeof (char *));
+		d->pkcolname = realloc(d->pkcolname, npkcol * sizeof (char *));
 #endif
-	d->pkcolname[npkcol-1] = strdup(pkname);
+		d->pkcolname[npkcol-1] = strdup(pkname);
+	}
 }
 
 void dmodel_init_sql(struct dmodel *d)
@@ -61,23 +62,18 @@ void dmodel_init_sql(struct dmodel *d)
 	for (i = 0; i < d->npkcol; i++) {
 		p = bufcat2(&select_pk_sql, p,
 			(i == 0) ? " " : ", ",
-			d->pkcolname[i],
-			" from ", 0);
-		p = bufcat(&select_pk_sql, p, d->qualified_name);
+			d->pkcolname[i], 0);
 	}
+	p = bufcat(&select_pk_sql, p, " from ");
+	p = bufcat(&select_pk_sql, p, d->qualified_name);
 	p = bufcat(&select_pk_sql, p, ";");
 	if (!p) goto fail;
 
 	p = insert_sql = bufnew(BUFSIZ);
 	p = bufcat(&insert_sql, p, "insert into ");
 	p = bufcat(&insert_sql, p, d->qualified_name);
-	for (i = 0; i < d->npkcol; i++) {
-		p = bufcat2(&insert_sql, p,
-			(i == 0) ? "(" : ", ",
-			d->pkcolname[i], 0);
-	}
-	p = bufcat(&insert_sql, p, ") values(");
-	for (i = 0; i + 1 < d->npkcol; i++) {
+	p = bufcat(&insert_sql, p, " values(");
+	for (i = 0; i + 1 < d->ncol; i++) {
 		p = bufcat(&insert_sql, p, "?, ");
 	}
 	p = bufcat(&insert_sql, p, "?);");
