@@ -115,7 +115,7 @@ int db_exec_stmt(int (*callback)(void *, sqlite3_stmt *), void *data, sqlite3_st
 	int rc;
 
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		if ((*callback)(data, stmt)) {
+		if (callback && (*callback)(data, stmt)) {
 			rc = SQLITE_ABORT;
 			break;
 		}

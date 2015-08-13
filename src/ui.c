@@ -197,7 +197,7 @@ void ui_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 
 	/* show all values in the matrix */
 	rc = db_exec_args(sqlcb_mat, matrix,
-		"select * from %s order by rowid asc;", qualified_name);
+		"select * from %s;", qualified_name);
 	if (rc != SQLITE_OK) goto fail;
 	IupSetAttribute(matrix, "dmodel", (char *) dmodel);
 	add_additional_line(matrix);

@@ -1,6 +1,7 @@
 #include <iup.h>
 #include <sqlite3.h>
 #include "yasf.h"
+#include "dmodel.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,28 +66,63 @@ int sqlcb_mat_update(void *data, int ncol, char **val, char **title)
 
 int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 {
-	int is_lastline;
-	int rc;
+	struct dmodel *dmodel;
+	int is_lastline, rc;
+
+	dmodel = (struct dmodel *) IupGetAttribute(ih, "dmodel");
+	if (!dmodel)	/* not editing */
+		return IUP_IGNORE;
 
 	is_lastline = (lin == IupGetInt(ih, "NUMLIN"));
 
 	if (mode == 1) { /* enter */
-		/* if pkslot is set, then it is in editing mode. */
-		return IUP_IGNORE;
+		if (is_lastline) {
+			/* TODO: insert a new record */
+			return IUP_IGNORE;
+		} else {
+			return IUP_CONTINUE;
+		}
 	} else if (update) { /* leave */
-#if 0
 		const char *colname, *newvalue;
+		sqlite3_stmt *stmt;
+		sqlite3_value **pk;
+		int i, ispk = 0;
+		char *zSql;
 
 		colname = IupGetAttributeId2(ih, "", 0, col);
 		newvalue = IupGetAttribute(ih, "VALUE");
-		/* TODO WITHOUT ROWID tables are not supported yet. */
-		rc = db_exec_args(0, 0, "update %s set \"%w\" = %Q where rowid = %d;",
-			qualified_name, colname, newvalue, pkslot[lin-1]
-		);
-		return (rc == SQLITE_OK) ? IUP_DEFAULT : IUP_IGNORE;
-#endif
+
+		zSql = sqlite3_mprintf(dmodel->update_sql, colname);
+		if (!zSql) goto fail;
+		rc = db_prepare(zSql, &stmt);
+		sqlite3_free(zSql);
+		if (rc != SQLITE_OK) goto fail;
+
+		sqlite3_bind_text(stmt, 1, newvalue, -1, SQLITE_STATIC);
+		/* XXX check range */
+		pk = dmodel_get_entry(dmodel, lin-1);
+		for (i = 0; i < dmodel->npkcol; i++) {
+			sqlite3_bind_value(stmt, 2+i, pk[i]);
+			if (strcmp(colname, dmodel->pkcolname[i]) == 0)
+				ispk = 1;
+		}
+		if (ispk) {
+			/* TODO: modifying a PK col needs more work */
+			IupMessage("Not Implemented",
+				"Modifying the primary key is not implemented "
+				"yet.");
+			sqlite3_finalize(stmt);
+			return IUP_IGNORE;
+		} else {
+			rc = db_exec_stmt(0, 0, stmt);
+		}
+		sqlite3_finalize(stmt);
+		if (rc != SQLITE_OK) goto fail;
+		return IUP_DEFAULT;
 	}
 	return IUP_CONTINUE;
+fail:
+	return IUP_IGNORE;
 }
 
 int cb_matrix_click(Ihandle *ih, int lin, int col, char *status)
