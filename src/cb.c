@@ -12,23 +12,6 @@ int cb_file_new(Ihandle *ih);
 
 static Ihandle *ctl_tree, *ctl_matrix;
 
-int IupAlarm2(const char *title, const char *msg, const char *buttons)
-{
-	Ihandle *dlg;
-	int rc;
-
-	dlg = IupMessageDlg();
-	IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
-	IupSetAttribute(dlg, "TITLE", "Drop");
-	IupSetAttribute(dlg, "BUTTONS", buttons);
-	IupSetAttribute(dlg, "VALUE", msg);
-	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
-	rc = IupGetInt(dlg, "BUTTONRESPONSE");
-	IupDestroy(dlg);
-
-	return rc;
-}
-
 int cb_main_init(Ihandle *ih)
 {
 	// initialization work
@@ -178,7 +161,7 @@ int cb_matrix_delrecord(Ihandle *ih)
 	IupGetIntInt(ctl_matrix, "FOCUS_CELL", &lin, &col);
 	if (lin == IupGetInt(ctl_matrix, "NUMLIN"))
 		return IUP_DEFAULT;
-	rc = IupAlarm2("Delete", "Delete this record?", "YESNO");
+	rc = IupMessage2("Delete", "Delete this record?", "QUESTION", "YESNO");
 	if (rc == 1) {
 		sqlite3_value **pk;
 		sqlite3_stmt *stmt;
@@ -505,9 +488,9 @@ int cb_drop(Ihandle *ih)
 	p = bufcat(&buf, p, "?");
 
 	if (!p) {	/* OOM, but have a try anyway... */
-		rc = IupAlarm2("Drop", "Drop the table?", "YESNO");
+		rc = IupMessage2("Drop", "Drop the table?", "QUESTION", "YESNO");
 	} else {
-		rc = IupAlarm2("Drop", buf, "YESNO");
+		rc = IupMessage2("Drop", buf, "QUESTION", "YESNO");
 	}
 	assert(rc == 1 || rc == 2);
 	bufdel(buf);

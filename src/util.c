@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <iup.h>
 #include "ulbuf.h"
 
 size_t escquote(char *out, const char *in, int esc)
@@ -53,4 +54,21 @@ char *bufcat2(char **buf, char *p, ...)
 	}
 	va_end(va);
 	return p;
+}
+
+int IupMessage2(const char *title, const char *msg, const char *type, const char *buttons)
+{
+	Ihandle *dlg;
+	int rc;
+
+	dlg = IupMessageDlg();
+	IupSetAttribute(dlg, "DIALOGTYPE", type);
+	IupSetAttribute(dlg, "TITLE", title);
+	IupSetAttribute(dlg, "BUTTONS", buttons);
+	IupSetAttribute(dlg, "VALUE", msg);
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	rc = IupGetInt(dlg, "BUTTONRESPONSE");
+	IupDestroy(dlg);
+
+	return rc;
 }

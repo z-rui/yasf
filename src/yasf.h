@@ -31,3 +31,4 @@ extern size_t escquote(char *, const char *, int);
 #define bufcat0(buf, p, s) bufncat(buf, p, sizeof s - 1)
 char *bufcat1(char **, char *, const char *);
 char *bufcat2(char **, char *, ...);
+int IupMessage2(const char *, const char *, const char *, const char *);
