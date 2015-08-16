@@ -173,6 +173,7 @@ wbt_replace_node_x(
 {
 	wbt_link_node(old->left, node, &node->left);
 	wbt_link_node(old->right, node, &node->right);
+	node->size = WBT_SIZE(node->left) + WBT_SIZE(node->right) + 1;
 	wbt_link_node(node, parent, link);
 }
 
@@ -209,12 +210,17 @@ wbt_erase(struct wbt_node *node, struct wbt_root *tree)
 		parent1 = node;
 		link1 = &node->right;
 		while ((succ = *link1)->left) {
+			--succ->size;
 			parent1 = succ;
 			link1 = &succ->left;
 		}
 		wbt_link_node(succ->right, parent1, link1);
 		wbt_replace_node_x(node, parent, link, succ);
-		link = link1;
+	}
+	while (parent) {
+		--parent->size;
+		assert(parent->size == WBT_SIZE(parent->left) + WBT_SIZE(parent->right) + 1);
+		parent = parent->parent;
 	}
 }
 
