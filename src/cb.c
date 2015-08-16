@@ -343,7 +343,7 @@ const char *select_database(void)
 	db_exec_str("pragma database_list;", sqlcb_dblist, (void *) list);
 
 	if (IupGetInt(list, "COUNT") == 0) {
-		IupMessage("Error", "No database can be detached.");
+		IupMessage2("Error", "No database can be detached.", "ERROR", "OK");
 	} else {
 		IupSetInt(list, "VALUE", 1);
 		IupPopup(dlg, IUP_CENTER, IUP_CENTER);

@@ -173,11 +173,13 @@ void ui_begin_edit(Ihandle *matrix, const char *dbname, const char *name)
 		for (k = 0; k < 3 && ctx.rowid_id[k]; k++)
 			;
 		if (k == 3) {
-			IupMessage("Error",
-				"All of the column names ROWID, OID and _ROWID_"
-				" has been defined by the user, probably on a "
-				"bad purpose. \nThe program cannot manipulate "
-				"this kind of table.");
+			IupMessage2("Error",
+				"PRIMARY KEY cannot be retrieved!\n"
+				"No column is declared as PRIMARY KEY and all "
+				"the column names ROWID, OID and _ROWID_ have "
+				"been declared as non-PRIMARY KEY.\n"
+				"Thus this table will not be editable.\n",
+				"ERROR", "OK");
 			goto fail;
 		}
 		/* rowid_ids[k] is a static variable */

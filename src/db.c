@@ -14,10 +14,8 @@ struct {
 static int report(int rc, int fatal)
 {
 	if (rc != SQLITE_OK) {
-		Ihandle *dlg;
 		char *buf, *p;
 
-		dlg = IupMessageDlg();
 		p = buf = bufnew(BUFSIZ);
 		p = bufcat(&buf, p, sqlite3_errmsg(glst->db));
 		p = bufcat(&buf, p, "\nError code: ");
@@ -26,13 +24,9 @@ static int report(int rc, int fatal)
 		p = bufcat(&buf, p, "\nError description: ");
 		p = bufcat(&buf, p, sqlite3_errstr(rc));
 		if (p) {
-			IupSetAttribute(dlg, "DIALOGTYPE", "ERROR");
-			IupSetAttribute(dlg, "TITLE", "SQLite3 Error");
-			IupSetAttribute(dlg, "VALUE", buf);
-			IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+			IupMessage2("SQLite3 Error", buf, "ERROR", "OK");
 		}
 		bufdel(buf);
-		IupDestroy(dlg);
 		if (fatal) exit(1);
 		return 1;
 	}

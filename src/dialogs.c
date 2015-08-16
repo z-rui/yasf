@@ -168,7 +168,7 @@ int cb_createindex_ok(Ihandle *ih)
 
 	assert(dbname && indexname);
 	if (!tablename) {
-		IupMessage("Error", "You have to specify the table name.");
+		IupMessage2("Error", "You have to specify the table name.", "ERROR", "OK");
 		return IUP_DEFAULT;
 	}
 
@@ -370,7 +370,7 @@ int cb_createtrigger_ok(Ihandle *ih)
 
 	assert(dbname && triggername);
 	if (!tablename) {
-		IupMessage("Error", "You have to specify the table name.");
+		IupMessage2("Error", "You have to specify the table name.", "ERROR", "OK");
 		return IUP_DEFAULT;
 	}
 
