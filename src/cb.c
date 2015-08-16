@@ -12,6 +12,23 @@ int cb_file_new(Ihandle *ih);
 
 static Ihandle *ctl_tree, *ctl_matrix;
 
+int IupAlarm2(const char *title, const char *msg, const char *buttons)
+{
+	Ihandle *dlg;
+	int rc;
+
+	dlg = IupMessageDlg();
+	IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
+	IupSetAttribute(dlg, "TITLE", "Drop");
+	IupSetAttribute(dlg, "BUTTONS", buttons);
+	IupSetAttribute(dlg, "VALUE", msg);
+	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
+	rc = IupGetInt(dlg, "BUTTONRESPONSE");
+	IupDestroy(dlg);
+
+	return rc;
+}
+
 int cb_main_init(Ihandle *ih)
 {
 	// initialization work
@@ -148,6 +165,39 @@ int cb_matrix_edit(Ihandle *ih, int lin, int col, int mode, int update)
 	return IUP_CONTINUE;
 fail:
 	return IUP_IGNORE;
+}
+
+int cb_matrix_delrecord(Ihandle *ih)
+{
+	struct dmodel *dmodel;
+	int rc, lin, col;
+
+	dmodel = (struct dmodel *) IupGetAttribute(ctl_matrix, "dmodel");
+	if (!dmodel)
+		return IUP_DEFAULT;
+	IupGetIntInt(ctl_matrix, "FOCUS_CELL", &lin, &col);
+	if (lin == IupGetInt(ctl_matrix, "NUMLIN"))
+		return IUP_DEFAULT;
+	rc = IupAlarm2("Delete", "Delete this record?", "YESNO");
+	if (rc == 1) {
+		sqlite3_value **pk;
+		sqlite3_stmt *stmt;
+		int i;
+
+		pk = dmodel_get_entry(dmodel, lin-1);
+		rc = db_prepare(dmodel->delete_sql, &stmt);
+		for (i = 0; i < dmodel->npkcol; i++) {
+			sqlite3_bind_value(stmt, 1+i, pk[i]);
+			fprintf(stderr, "pk[%d]=%s\n", i, sqlite3_value_text(pk[i]));
+		}
+		rc = db_exec_stmt(0, 0, stmt);
+		if (rc == SQLITE_OK) {
+			IupSetInt(ctl_matrix, "DELLIN", lin);
+			dmodel_del_entry(dmodel, lin-1);
+		}
+		sqlite3_finalize(stmt);
+	}
+	return IUP_DEFAULT;
 }
 
 int cb_matrix_click(Ihandle *ih, int lin, int col, char *status)
@@ -437,23 +487,6 @@ int cb_table_rename(Ihandle *ih)
 	tree = IupGetHandle("ctl_tree");
 	IupSetAttribute(tree, "RENAME", "YES");
 	return IUP_DEFAULT;
-}
-
-int IupAlarm2(const char *title, const char *msg, const char *buttons)
-{
-	Ihandle *dlg;
-	int rc;
-
-	dlg = IupMessageDlg();
-	IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
-	IupSetAttribute(dlg, "TITLE", "Drop");
-	IupSetAttribute(dlg, "BUTTONS", "YESNO");
-	IupSetAttribute(dlg, "VALUE", msg);
-	IupPopup(dlg, IUP_CURRENT, IUP_CURRENT);
-	rc = IupGetInt(dlg, "BUTTONRESPONSE");
-	IupDestroy(dlg);
-
-	return rc;
 }
 
 int cb_drop(Ihandle *ih)
