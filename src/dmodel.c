@@ -48,36 +48,10 @@ void dmodel_add_col(struct dmodel *d, const char *pkname, int ispk)
 
 void dmodel_init_sql(struct dmodel *d)
 {
-	char *where_cl;
-	char *select_sql, *select_pk_sql, *insert_sql, *delete_sql, *update_sql;
-	char *p;
-	int i;
+	char *where_cl = 0;
 	size_t where_cl_len;
-
-	where_cl = 0;
-	select_sql = select_pk_sql = insert_sql = delete_sql = update_sql = 0;
-
-	p = select_pk_sql = bufnew(BUFSIZ);
-	p = bufcat(&select_pk_sql, p, "select");
-	for (i = 0; i < d->npkcol; i++) {
-		p = bufcat2(&select_pk_sql, p,
-			(i == 0) ? " " : ", ",
-			d->pkcolname[i], 0);
-	}
-	p = bufcat(&select_pk_sql, p, " from ");
-	p = bufcat(&select_pk_sql, p, d->qualified_name);
-	p = bufcat(&select_pk_sql, p, ";");
-	if (!p) goto fail;
-
-	p = insert_sql = bufnew(BUFSIZ);
-	p = bufcat(&insert_sql, p, "insert into ");
-	p = bufcat(&insert_sql, p, d->qualified_name);
-	p = bufcat(&insert_sql, p, " values(");
-	for (i = 0; i + 1 < d->ncol; i++) {
-		p = bufcat(&insert_sql, p, "?, ");
-	}
-	p = bufcat(&insert_sql, p, "?);");
-	if (!p) goto fail;
+	char *buf, *p;
+	int i;
 
 	p = where_cl = bufnew(BUFSIZ);
 	for (i = 0; i < d->npkcol; i++) {
@@ -89,39 +63,63 @@ void dmodel_init_sql(struct dmodel *d)
 	if (!p) goto fail;
 	where_cl_len = (size_t) (p - where_cl);
 
-	p = select_sql = bufnew(BUFSIZ);
-	p = bufcat(&select_sql, p, "select \"%w\" from ");
-	p = bufcat(&select_sql, p, d->qualified_name);
-	p = bufncat(&select_sql, p, where_cl, where_cl_len);
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "select");
+	for (i = 0; i < d->npkcol; i++) {
+		p = bufcat2(&buf, p,
+			(i == 0) ? " " : ", ",
+			d->pkcolname[i], 0);
+	}
+	p = bufcat(&buf, p, " from ");
+	p = bufcat(&buf, p, d->qualified_name);
+	p = bufcat(&buf, p, ";");
+	d->select_pk_sql = buf;
 	if (!p) goto fail;
 
-	p = delete_sql = bufnew(BUFSIZ);
-	p = bufcat(&delete_sql, p, "delete from ");
-	p = bufcat(&delete_sql, p, d->qualified_name);
-	p = bufncat(&delete_sql, p, where_cl, where_cl_len);
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "insert into ");
+	p = bufcat(&buf, p, d->qualified_name);
+	p = bufcat(&buf, p, " values(");
+	for (i = 0; i + 1 < d->ncol; i++) {
+		p = bufcat(&buf, p, "?, ");
+	}
+	p = bufcat(&buf, p, "?);");
+	d->insert_sql = buf;
 	if (!p) goto fail;
 
-	p = update_sql = bufnew(BUFSIZ);
-	p = bufcat(&update_sql, p, "update ");
-	p = bufcat(&update_sql, p, d->qualified_name);
-	p = bufcat(&update_sql, p, " set \"%w\"=?");
-	p = bufncat(&update_sql, p, where_cl, where_cl_len);
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "select \"%w\" from ");
+	p = bufcat(&buf, p, d->qualified_name);
+	p = bufncat(&buf, p, where_cl, where_cl_len);
+	d->select_sql = buf;
+	if (!p) goto fail;
+
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "delete from ");
+	p = bufcat(&buf, p, d->qualified_name);
+	p = bufncat(&buf, p, where_cl, where_cl_len);
+	d->delete_sql = buf;
+	if (!p) goto fail;
+
+	p = buf = bufnew(BUFSIZ);
+	p = bufcat(&buf, p, "update ");
+	p = bufcat(&buf, p, d->qualified_name);
+	p = bufcat(&buf, p, " set \"%w\"=?");
+	p = bufncat(&buf, p, where_cl, where_cl_len);
+	d->update_sql = buf;
 	if (!p) goto fail;
 
 	bufdel(where_cl);
-	d->select_sql = select_sql;
-	d->select_pk_sql = select_pk_sql;
-	d->insert_sql = insert_sql;
-	d->delete_sql = delete_sql;
-	d->update_sql = update_sql;
 	return;
 fail:
 	bufdel(where_cl);
-	bufdel(select_sql);
-	bufdel(select_pk_sql);
-	bufdel(insert_sql);
-	bufdel(delete_sql);
-	bufdel(update_sql);
+	bufdel(d->select_sql);
+	bufdel(d->select_pk_sql);
+	bufdel(d->insert_sql);
+	bufdel(d->delete_sql);
+	bufdel(d->update_sql);
+	d->select_sql = d->select_pk_sql = d->insert_sql = d->delete_sql
+		= d->update_sql = 0;
 }
 
 void dmodel_entry_free(struct dmodel_entry *ent, int npkcol)
